@@ -1,3 +1,9 @@
+import UserButton from "@/features/auth/components/user-button";
+
 export default function Home() {
-  return <div className="font-bold text-3xl italic">hi</div>;
+  return (
+    <div>
+      <UserButton />
+    </div>
+  );
 }
