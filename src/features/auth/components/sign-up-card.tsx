@@ -40,7 +40,6 @@ const SignUpCard = ({ setState }: SignUpCardProps) => {
     }
     if (password !== confirmedPassword) {
       setError("Passwords do not match");
-      console.log(password, confirmedPassword);
 
       return;
     }

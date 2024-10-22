@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AvatarFallback } from "@radix-ui/react-avatar";
 import React, { useState } from "react";
-import { useCurrentUser } from "../hooks/use-current-user";
+import { useCurrentUser } from "../api/use-current-user";
 import { Loader, LogOut } from "lucide-react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
@@ -22,15 +22,16 @@ function UserButton() {
 
   const { signOut } = useAuthActions();
   const handleSignOut = async () => {
-    setIsLoggingOut(true); // Set it to true immediately
+    setIsLoggingOut(true);
 
     try {
-      await signOut(); // Wait for the sign-out process to complete
-      router.push("/auth"); // Redirect after sign-out is successful
+      await signOut();
+      router.push("/auth");
+      router.refresh();
     } catch (error) {
-      console.error("Error during sign-out", error); // Handle potential errors
+      console.error("Error during sign-out", error);
     } finally {
-      setIsLoggingOut(false); // Reset after the process finishes
+      setIsLoggingOut(false);
     }
   };
 

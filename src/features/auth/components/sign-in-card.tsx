@@ -30,7 +30,6 @@ const SignInCard = ({ setState }: SignInCardProps) => {
   const onCredentialSignIn = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setPending(true);
-    console.log("hi");
 
     signIn("password", { email, password, flow: "signIn" })
       .catch(() => {
