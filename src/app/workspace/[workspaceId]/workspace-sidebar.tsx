@@ -13,14 +13,24 @@ import WorkspaceHeader from "./workspace-header";
 import SidebarItem from "./sidebar-item";
 import { UseGetChannels } from "@/features/channels/api/use-get-channels";
 import WorkspaceSection from "./workspace-section";
+import { useGetMembers } from "@/features/members/api/use-get-member";
+import UserItem from "./user-item";
+import { useCreateChannelModal } from "@/features/channels/store/use-get-channel-modal";
+import { useChannelId } from "@/hooks/use-channel-id";
 
 const WorkspaceSideBar = () => {
+  const channelId = useChannelId();
+
   const workspaceId = useWorkSpaceId();
+  const [open, setOpen] = useCreateChannelModal();
   const { data: member, isLoading: memberLoading } = useCurrentMember({
     workspaceId,
   });
   const { data: workspace, isLoading: workspaceLoading } = useGetWorkspace({
     id: workspaceId,
+  });
+  const { data: members, isLoading: memebersLoading } = useGetMembers({
+    workspaceId,
   });
   const { data: channels, isLoading: channelsLoading } = UseGetChannels({
     workspaceId,
@@ -50,13 +60,39 @@ const WorkspaceSideBar = () => {
         <SidebarItem label="Drafts & Sent" Icon={SendHorizonal} id="drafts" />
       </div>
 
-      <WorkspaceSection label="channels" hint="New channel" onNew={() => {}}>
+      <WorkspaceSection
+        label="Channels"
+        hint="New channel"
+        onNew={
+          member.role === "admin"
+            ? () => {
+                setOpen(true);
+              }
+            : undefined
+        }
+      >
         {channels?.map((item) => (
           <SidebarItem
             key={item._id}
             Icon={HashIcon}
             label={item.name}
             id={item._id}
+            variant={channelId === item._id ? "active" : "default"}
+          />
+        ))}
+      </WorkspaceSection>
+      <WorkspaceSection
+        label="Direct messages"
+        hint="New Direct Messages"
+        onNew={() => {}}
+      >
+        {members?.map((item) => (
+          <UserItem
+            id={item._id}
+            image={item.user.image}
+            label={item.user.name}
+            key={item._id}
+            variant={"default"}
           />
         ))}
       </WorkspaceSection>
