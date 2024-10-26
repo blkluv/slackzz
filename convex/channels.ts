@@ -30,6 +30,31 @@ export const get = query({
     return channels;
   },
 });
+export const getById = query({
+  args: {
+    channelId: v.id("channels"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+
+    if (!userId) return null;
+
+    const channel = await ctx.db.get(args.channelId);
+
+    if (!channel) return null;
+
+    const member = await ctx.db
+      .query("members")
+      .withIndex("by_workspace_id_user_id", (q) =>
+        q.eq("userId", userId).eq("workspaceId", channel.workspaceId)
+      )
+      .unique();
+
+    if (!member) return null;
+
+    return channel;
+  },
+});
 
 export const create = mutation({
   args: {
@@ -58,5 +83,64 @@ export const create = mutation({
     });
 
     return channelId;
+  },
+});
+export const update = mutation({
+  args: {
+    channelId: v.id("channels"),
+    name: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+
+    if (!userId) throw new Error("Unauthorized");
+
+    const channel = await ctx.db.get(args.channelId);
+
+    if (!channel) throw new Error("Unauthorized");
+
+    const member = await ctx.db
+      .query("members")
+      .withIndex("by_workspace_id_user_id", (q) =>
+        q.eq("userId", userId).eq("workspaceId", channel.workspaceId)
+      )
+      .unique();
+
+    if (!member || member.role !== "admin") throw new Error("Unauthorized");
+
+    const parsedName = args.name.replace(/\s+/g, "-").toLowerCase();
+
+    await ctx.db.patch(args.channelId, {
+      name: parsedName,
+    });
+
+    return args.channelId;
+  },
+});
+export const remove = mutation({
+  args: {
+    channelId: v.id("channels"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+
+    if (!userId) throw new Error("Unauthorized");
+
+    const channel = await ctx.db.get(args.channelId);
+
+    if (!channel) throw new Error("Unauthorized");
+
+    const member = await ctx.db
+      .query("members")
+      .withIndex("by_workspace_id_user_id", (q) =>
+        q.eq("userId", userId).eq("workspaceId", channel.workspaceId)
+      )
+      .unique();
+
+    if (!member || member.role !== "admin") throw new Error("Unauthorized");
+
+    //remove associate messages
+    await ctx.db.delete(args.channelId);
+    return args.channelId;
   },
 });

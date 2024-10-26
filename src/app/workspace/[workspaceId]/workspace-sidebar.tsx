@@ -32,6 +32,8 @@ const WorkspaceSideBar = () => {
   const { data: members, isLoading: memebersLoading } = useGetMembers({
     workspaceId,
   });
+  // console.log(members);
+
   const { data: channels, isLoading: channelsLoading } = UseGetChannels({
     workspaceId,
   });

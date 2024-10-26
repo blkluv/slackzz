@@ -28,16 +28,20 @@ export const get = query({
         q.eq("workspaceId", args.workspaceId)
       )
       .collect();
+
     const members = [];
+
     for (const memberData of data) {
       const user = await populateUser(ctx, memberData.userId);
+
       if (user) {
         members.push({
-          ...member,
+          ...memberData,
           user,
         });
       }
     }
+
     return members;
   },
 });

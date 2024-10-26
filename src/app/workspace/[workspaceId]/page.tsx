@@ -17,7 +17,9 @@ function WorkspaceIdPage() {
   const { data: member, isLoading: memberLoading } = useCurrentMember({
     workspaceId,
   });
+
   const isAdmin = useMemo(() => member?.role === "admin", [member?.role]);
+
   const { data: workspace, isLoading: workspaceLoading } = useGetWorkspace({
     id: workspaceId,
   });
@@ -33,12 +35,17 @@ function WorkspaceIdPage() {
       channelLoading ||
       !workspace ||
       memberLoading ||
-      member
+      !member
     )
       return;
+
+    console.log("hi");
+
     if (channelID) {
       router.push(`/workspace/${workspaceId}/channel/${channelID}`);
     } else if (!open && isAdmin) {
+      console.log("hi");
+
       setOpen(true);
     }
   }, [
@@ -48,6 +55,7 @@ function WorkspaceIdPage() {
     workspaceLoading,
     channelID,
     open,
+    channels,
     member,
     router,
     setOpen,
@@ -62,7 +70,7 @@ function WorkspaceIdPage() {
       </div>
     );
 
-  if (!workspace) {
+  if (!workspace || !member) {
     return (
       <div className="h-full flex flex-1 items-center justify-center flex-col gap-2">
         <TriangleAlert className="size-6  text-muted-foreground" />
