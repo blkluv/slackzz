@@ -55,7 +55,7 @@ function UserButton() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center" side="right" className="w-60">
         <DropdownMenuItem
-          className={`${isLoggingOut ? "opacity-75" : ""}`}
+          className={`${isLoggingOut ? "opacity-75" : ""} cursor-pointer hover:opacity-80`}
           onClick={(e) => {
             e.preventDefault();
             handleSignOut();

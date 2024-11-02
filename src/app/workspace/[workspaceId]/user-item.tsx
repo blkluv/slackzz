@@ -41,8 +41,8 @@ const UserItem = ({ id, image, label = "Member", variant }: UserItemProps) => {
     >
       <Link href={`/workspace/${workspaceId}/member/${id}`}>
         <Avatar className="size-5 rounded-md mr-1">
-          <AvatarImage src={image} className="rounded-md " />
-          <AvatarFallback className="rounded-md">{fallback}</AvatarFallback>
+          <AvatarImage src={image} />
+          <AvatarFallback>{fallback}</AvatarFallback>
         </Avatar>
         <span className=" text-xs truncate">{label}</span>
       </Link>
