@@ -4,7 +4,7 @@ import { auth } from "./auth";
 import { Doc, Id } from "./_generated/dataModel";
 import { paginationOptsValidator } from "convex/server";
 
-const getMember = async (
+export const getMember = async (
   ctx: QueryCtx,
   workspaceId: Id<"workspaces">,
   user: Id<"users">
@@ -196,5 +196,49 @@ export const get = query({
         (message): message is NonNullable<typeof message> => message != null
       ),
     };
+  },
+});
+
+export const update = mutation({
+  args: {
+    id: v.id("messages"),
+    body: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("UnAuthorized");
+
+    const message = await ctx.db.get(args.id);
+    if (!message) throw new Error("Cant find message");
+
+    const member = await getMember(ctx, message.workspaceId, userId);
+    if (!member || member._id !== message.memberId)
+      throw new Error("UnAuthorized");
+
+    await ctx.db.patch(args.id, {
+      body: args.body,
+      updatedAt: Date.now(),
+    });
+    return args.id;
+  },
+});
+export const remove = mutation({
+  args: {
+    id: v.id("messages"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("UnAuthorized");
+
+    const message = await ctx.db.get(args.id);
+    if (!message) throw new Error("Cant find message");
+
+    const member = await getMember(ctx, message.workspaceId, userId);
+    if (!member || member._id !== message.memberId)
+      throw new Error("UnAuthorized");
+
+    /* TODO: ACTUALLY MAINTAIN THE MESSAGE BUT MARK IT AS DELETED */
+    await ctx.db.delete(args.id);
+    return args.id;
   },
 });

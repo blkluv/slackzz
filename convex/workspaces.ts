@@ -38,7 +38,6 @@ export const create = mutation({
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error("Unauthorized");
     const joinCode = generateCode();
-    console.log(joinCode);
 
     const workspaceId = await ctx.db.insert("workspaces", {
       name: args.name,

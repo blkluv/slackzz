@@ -39,13 +39,9 @@ function WorkspaceIdPage() {
     )
       return;
 
-    console.log("hi");
-
     if (channelID) {
       router.push(`/workspace/${workspaceId}/channel/${channelID}`);
     } else if (!open && isAdmin) {
-      console.log("hi");
-
       setOpen(true);
     }
   }, [
