@@ -7,6 +7,7 @@ import { Id } from "../../convex/_generated/dataModel";
 import { useWorkSpaceId } from "@/hooks/use-workspace-id";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
 import { Loader } from "lucide-react";
+import ConversationHero from "./conversation-hero";
 
 interface MessageListProps {
   channelName?: string;
@@ -74,6 +75,7 @@ const MessageList = ({
 
     return format(date, "EEEE, MMMM d"); // Fallback for other dates
   };
+  /* TODOS: HINTING IF THERE IS A THREAD FOR EACH MESSAGE  */
 
   return (
     <div className="flex-1 flex flex-col-reverse pb-4 overflow-y-auto  message-scrollbar">
@@ -151,6 +153,9 @@ const MessageList = ({
       )}
       {variant === "channel" && channelName && channelCreationTime && (
         <ChannelHero name={channelName} creationTime={channelCreationTime} />
+      )}
+      {variant === "conversation" && (
+        <ConversationHero name={memberName} image={memberImage} />
       )}
     </div>
   );
