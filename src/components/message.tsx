@@ -14,6 +14,7 @@ import useConfirm from "@/hooks/use-confirm-tsx";
 import { useCreateReactions } from "@/features/reactions/api/use-create-reactions";
 import Reactions from "./reactions";
 import { usePanel } from "@/hooks/use-panel";
+import ThreadBar from "./thread-bar";
 
 const Renderer = dynamic(() => import("@/components/renderer"), { ssr: false });
 const Editor = dynamic(() => import("@/components/editor"), { ssr: false });
@@ -41,6 +42,7 @@ interface MessageProps {
   threadCount?: number;
   threadImage?: string;
   threadTimestamp?: number;
+  threadName?: string;
 }
 
 const Message = ({
@@ -60,9 +62,11 @@ const Message = ({
   isEditing,
   threadCount,
   threadImage,
+  threadName,
   threadTimestamp,
 }: MessageProps) => {
-  const { onOpenMessage, onCloseMessage, parentMessageId } = usePanel();
+  const { onOpenMessage, onCloseMessage, parentMessageId, onOpenProfile } =
+    usePanel();
   const [ConfirmDialog, confirm] = useConfirm(
     "Delete message",
     "Are you sure you want to delete this message? This cannot be undone"
@@ -80,7 +84,7 @@ const Message = ({
   const { mutate: reactMessage, isPending: isReactingMessage } =
     useCreateReactions();
 
-  const isPending = isUpdatingMessage;
+  const isPending = isUpdatingMessage || isReactingMessage;
 
   const handleReaction = (value: string) => {
     reactMessage(
@@ -168,6 +172,13 @@ const Message = ({
                   </span>
                 ) : null}
                 <Reactions data={reactions} onChange={handleReaction} />
+                <ThreadBar
+                  count={threadCount}
+                  onClick={() => onOpenMessage(id)}
+                  image={threadImage}
+                  timestamp={threadTimestamp}
+                  name={threadName}
+                />
               </div>
             )}
           </div>
@@ -199,7 +210,7 @@ const Message = ({
         )}
       >
         <div className="flex items-start gap-2">
-          <button>
+          <button onClick={() => onOpenProfile(memberId)}>
             <Avatar>
               <AvatarImage src={authorImage} />
               <AvatarFallback>{fallback}</AvatarFallback>
@@ -223,7 +234,7 @@ const Message = ({
               <div className="text-sm">
                 <button
                   className="font-bold text-primary hover:underline "
-                  onClick={() => {}}
+                  onClick={() => onOpenProfile(memberId)}
                 >
                   {authorName}
                 </button>
@@ -241,6 +252,13 @@ const Message = ({
                 <span className="text-xs text-muted-foreground">(edited)</span>
               ) : null}
               <Reactions data={reactions} onChange={handleReaction} />
+              <ThreadBar
+                count={threadCount}
+                image={threadImage}
+                name={threadName}
+                timestamp={threadTimestamp}
+                onClick={() => onOpenMessage(id)}
+              />
             </div>
           )}
         </div>

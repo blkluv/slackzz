@@ -223,6 +223,7 @@ const Thread = ({ messageId, onCloseMessage }: ThreadProps) => {
                     threadTimestamp={message.threadTimestamp}
                     threadImage={message.threadImage}
                     isEditing={editingId === message._id}
+                    threadName={message.threadName}
                     setEditingId={setEditingId}
                     isCompact={isCompact}
                     hideThreadButton
