@@ -24,14 +24,14 @@ const WorkspaceSideBar = () => {
   const channelId = useChannelId();
 
   const workspaceId = useWorkSpaceId();
-  const [open, setOpen] = useCreateChannelModal();
+  const [_open, setOpen] = useCreateChannelModal();
   const { data: member, isLoading: memberLoading } = useCurrentMember({
     workspaceId,
   });
   const { data: workspace, isLoading: workspaceLoading } = useGetWorkspace({
     id: workspaceId,
   });
-  const { data: members, isLoading: memebersLoading } = useGetMembers({
+  const { data: members, isLoading: membersLoading } = useGetMembers({
     workspaceId,
   });
 
@@ -39,7 +39,7 @@ const WorkspaceSideBar = () => {
     workspaceId,
   });
 
-  if (workspaceLoading || memberLoading)
+  if (workspaceLoading || memberLoading || membersLoading || channelsLoading)
     return (
       <div className="flex flex-col bg-[#5E2C4F] h-full items-center justify-center">
         <Loader className="size-5 animate-spin text-white" />
