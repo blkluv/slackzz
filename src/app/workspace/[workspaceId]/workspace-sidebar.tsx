@@ -24,7 +24,7 @@ const WorkspaceSideBar = () => {
   const channelId = useChannelId();
 
   const workspaceId = useWorkSpaceId();
-  const [_open, setOpen] = useCreateChannelModal();
+  const [, setOpen] = useCreateChannelModal();
   const { data: member, isLoading: memberLoading } = useCurrentMember({
     workspaceId,
   });
