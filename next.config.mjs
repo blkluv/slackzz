@@ -6,6 +6,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "youthful-dodo-681.convex.cloud",
       },
+      {
+        protocol: "https",
+        hostname: "steady-swordfish-279.convex.cloud",
+      },
     ],
   },
 };
