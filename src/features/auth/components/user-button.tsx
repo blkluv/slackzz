@@ -26,7 +26,6 @@ function UserButton() {
 
     try {
       await signOut();
-      router.push("/auth");
       router.refresh();
     } catch (error) {
       console.error("Error during sign-out", error);
