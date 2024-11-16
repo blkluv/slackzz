@@ -9,6 +9,7 @@ const ConversationHero = ({
   image?: string;
 }) => {
   const avatarFallBack = name.charAt(0).toUpperCase();
+
   return (
     <div className="mt-[88px] mx-5 mb-4 ">
       <div className="flex items-center gap-x-1 mb-2">
