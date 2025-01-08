@@ -3,14 +3,28 @@
 import { UseGetChannel } from "@/features/channels/api/use-get-channel";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { Loader, TriangleAlert } from "lucide-react";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Header from "./_components/header";
 import ChatInput from "./_components/chat-input";
 import { useGetMessages } from "@/features/messages/api/use-get-message";
 import MessageList from "@/components/message-list";
+import { useSearchParams } from "next/navigation";
+import { useWorkSpaceId } from "@/hooks/use-workspace-id";
+import VideoChat from "@/components/phone-call";
+import { useCurrentUser } from "@/features/auth/api/use-current-user";
 
 const ChannelIdPage = () => {
+  const workspaceId = useWorkSpaceId();
   const channelId = useChannelId();
+  const [isVideoCall, setIsVideoCall] = useState<boolean>(false);
+  const searchParams = useSearchParams();
+  const { data: currentUser } = useCurrentUser();
+  const chatId = `${workspaceId}:${channelId}`;
+
+  useEffect(() => {
+    const callParam = searchParams?.get("call");
+    setIsVideoCall(callParam === "true");
+  }, [searchParams, chatId]);
 
   const { data: channel, isLoading: channelLoading } = UseGetChannel({
     channelId,
@@ -33,7 +47,8 @@ const ChannelIdPage = () => {
 
   return (
     <div className="flex flex-col h-full ">
-      <Header title={channel.name} />
+      <Header isVideoCall={isVideoCall} title={channel.name} />
+      {isVideoCall && <VideoChat chatId={chatId} userData={currentUser!} />}
       <MessageList
         channelName={channel.name}
         channelCreationTime={channel._creationTime}

@@ -3,7 +3,6 @@ import {
   HashIcon,
   Loader,
   MessageSquareText,
-  SendHorizonal,
 } from "lucide-react";
 
 import { useCurrentMember } from "@/features/members/api/use-current-member";
@@ -60,11 +59,6 @@ const WorkspaceSideBar = () => {
       />
       <div className="flex flex-col px-2 mt-3">
         <SidebarItem label="Threads" Icon={MessageSquareText} id={channelId} />
-        <SidebarItem
-          label="Drafts & Sent"
-          Icon={SendHorizonal}
-          id={channelId}
-        />
       </div>
 
       <WorkspaceSection
@@ -88,11 +82,7 @@ const WorkspaceSideBar = () => {
           />
         ))}
       </WorkspaceSection>
-      <WorkspaceSection
-        label="Direct messages"
-        hint="New Direct Messages"
-        onNew={() => {}}
-      >
+      <WorkspaceSection label="Direct messages">
         {members?.map((item) => (
           <UserItem
             variant={item._id === memberId ? "active" : "default"}

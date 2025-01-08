@@ -16,19 +16,22 @@ import useConfirm from "@/hooks/use-confirm-tsx";
 import { useWorkSpaceId } from "@/hooks/use-workspace-id";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import { TrashIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import React, { useState } from "react";
 import { FaChevronDown } from "react-icons/fa";
+import { FcEndCall, FcPhone } from "react-icons/fc";
 import { toast } from "sonner";
 
 interface HeaderProps {
   title: string;
+  isVideoCall: boolean;
 }
 
-const Header = ({ title }: HeaderProps) => {
+const Header = ({ title, isVideoCall }: HeaderProps) => {
   const channelId = useChannelId();
   const workspaceId = useWorkSpaceId();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [editOpen, setEditOpen] = useState(false);
   const [value, setValue] = useState(title);
@@ -81,6 +84,17 @@ const Header = ({ title }: HeaderProps) => {
         },
       }
     );
+  };
+
+  const handleCall = () => {
+    const currentParams = new URLSearchParams(searchParams?.toString());
+    if (currentParams.has("call")) {
+      currentParams.delete("call");
+    } else {
+      currentParams.set("call", "true");
+    }
+
+    router.push(`?${currentParams.toString()}`);
   };
 
   return (
@@ -160,6 +174,11 @@ const Header = ({ title }: HeaderProps) => {
           </DialogContent>
         )}
       </Dialog>
+      <div className="ml-auto">
+        <Button variant={"ghost"} onClick={handleCall}>
+          {isVideoCall ? <FcEndCall size={16} /> : <FcPhone size={16} />}
+        </Button>
+      </div>
     </div>
   );
 };

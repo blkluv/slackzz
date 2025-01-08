@@ -12,7 +12,6 @@ import Conversation from "./_component/conversation";
 const MemberIdPage = () => {
   const workspaceId = useWorkSpaceId();
   const memberId = useMemberId();
-
   const [conversationId, setConversationId] =
     useState<Id<"conversations"> | null>(null);
 

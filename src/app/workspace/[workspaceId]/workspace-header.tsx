@@ -8,8 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import React, { useState } from "react";
 import { Doc } from "../../../../convex/_generated/dataModel";
-import { ChevronDown, Filter, SquarePen } from "lucide-react";
-import Hint from "@/components/hint";
+import { ChevronDown } from "lucide-react";
 import PreferencesModal from "./preferences-modal";
 import InviteModal from "./invite-modal";
 
@@ -87,7 +86,7 @@ const WorkspaceHeader = ({ workspace, isAdmin }: WorkspaceHeader) => {
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-        <div className="flex items-center gap-0.5">
+        {/* <div className="flex items-center gap-0.5">
           <Hint label="Filter conversations" side="bottom">
             <Button size={"iconSm"} variant={"transparent"}>
               <Filter className="size-4" />
@@ -98,7 +97,7 @@ const WorkspaceHeader = ({ workspace, isAdmin }: WorkspaceHeader) => {
               <SquarePen className="size-4" />
             </Button>
           </Hint>
-        </div>
+        </div> */}
       </div>
     </>
   );

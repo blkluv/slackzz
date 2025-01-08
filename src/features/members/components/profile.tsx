@@ -88,7 +88,6 @@ const Profile = ({ memberId, onClose }: ProfileProps) => {
       {
         onSuccess() {
           router.push("/");
-          console.log("hi");
 
           toast.success("You've left the workspace");
           onClose();

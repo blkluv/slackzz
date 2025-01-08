@@ -9,7 +9,7 @@ interface WorkspaceSectionProps {
   children: ReactNode;
   label: string;
   onNew?: () => void;
-  hint: string;
+  hint?: string;
 }
 
 const WorkspaceSection = ({
@@ -38,7 +38,7 @@ const WorkspaceSection = ({
         >
           <span className="truncate">{label}</span>
         </Button>
-        {onNew && (
+        {onNew && hint ? (
           <Hint label={hint} side="top" align="center">
             <Button
               onClick={onNew}
@@ -49,6 +49,8 @@ const WorkspaceSection = ({
               <PlusIcon className="size-5" />
             </Button>
           </Hint>
+        ) : (
+          ""
         )}
       </div>
 

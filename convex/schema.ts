@@ -4,6 +4,15 @@ import { v } from "convex/values";
 
 const schema = defineSchema({
   ...authTables,
+  subscriptions: defineTable({
+    userId: v.id("users"),
+    stripeCustomerId: v.string(),
+    stripePriceId: v.string(),
+    stripeSubscriptionId: v.string(),
+    stripeCurrentPeriodEnd: v.number(),
+    isActive: v.boolean(),
+  }),
+
   workspaces: defineTable({
     name: v.string(),
     userId: v.id("users"),

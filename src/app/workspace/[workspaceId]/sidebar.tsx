@@ -2,7 +2,7 @@ import UserButton from "@/features/auth/components/user-button";
 import React from "react";
 import WorkspaceSwitcher from "./workspace-switcher";
 import SideBarButton from "./sidebar-buttons";
-import { Bell, Home, MessagesSquare, MoreHorizontal } from "lucide-react";
+import { Bell, Home } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 const Sidebar = () => {
@@ -15,21 +15,21 @@ const Sidebar = () => {
         label="Home"
         isActive={pathName.includes("/workspace")}
       />
-      <SideBarButton
+      {/* <SideBarButton
         Icon={MessagesSquare}
         label="DMs"
         isActive={pathName.includes("/dms")}
-      />
+      /> */}
       <SideBarButton
         Icon={Bell}
         label="Activity"
         isActive={pathName.includes("/activity")}
       />
-      <SideBarButton
+      {/* <SideBarButton
         Icon={MoreHorizontal}
         label="More"
         isActive={pathName.includes("/more")}
-      />
+      /> */}
       <div className="flex flex-col items-center justify-center gap-y-1 mt-auto">
         <UserButton />
       </div>
