@@ -1,6 +1,8 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation } from "convex/react";
+import { useAction } from "convex/react";
 import {
   Card,
   CardHeader,
@@ -11,39 +13,73 @@ import {
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { api } from "../../../convex/_generated/api";
+import { api } from "../../../../convex/_generated/api";
 
 const SubscriptionSuccess = () => {
   const router = useRouter();
   const [isVerifying, setIsVerifying] = useState(true);
-  const verifySubscription = useMutation(api.stripe.verifySubscription);
-
+  const [isVerified, setIsVerified] = useState(false);
+  const verifySubscription = useAction(api.stripe.verifySubscription);
   useEffect(() => {
+    let isMounted = true;
+    const hasVerified = sessionStorage.getItem("subscription_verified");
+    if (hasVerified) {
+      setIsVerifying(false);
+      setIsVerified(true);
+      return;
+    }
+
     const verifySession = async () => {
       const sessionId = new URLSearchParams(window.location.search).get(
         "session_id"
       );
 
       if (!sessionId) {
-        toast.error("Invalid session");
-        router.push("/subscription");
+        if (isMounted) {
+          toast.error("Invalid session");
+          router.push("/subscription");
+        }
+
         return;
       }
 
       try {
         await verifySubscription({ sessionId });
-        toast.success("Subscription activated successfully!");
+        if (isMounted) {
+          sessionStorage.setItem("subscription_verified", "true");
+          setIsVerified(true);
+          toast.success("Subscription activated successfully!");
+        }
       } catch (error) {
-        console.error("Verification error:", error);
-        toast.error("Failed to verify subscription. Please contact support.");
-        router.push("/subscription");
+        if (isMounted) {
+          console.error("Verification error:", error);
+          toast.error("Failed to verify subscription. Please contact support.");
+          router.push("/subscription");
+        }
       } finally {
-        setIsVerifying(false);
+        if (isMounted) {
+          setIsVerifying(false);
+        }
       }
     };
 
     verifySession();
-  }, [verifySubscription, router]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Redirect if no session_id is present
+  useEffect(() => {
+    const sessionId = new URLSearchParams(window.location.search).get(
+      "session_id"
+    );
+
+    if (!sessionId && !isVerifying && !isVerified) {
+      router.push("/subscription");
+    }
+  }, [isVerifying, isVerified, router]);
 
   if (isVerifying) {
     return (
@@ -72,7 +108,14 @@ const SubscriptionSuccess = () => {
           <p className="text-center text-gray-600">
             You now have access to all Pro features. Start exploring them now!
           </p>
-          <Button className="w-full" onClick={() => router.push("/workspace")}>
+          <Button
+            className="w-full"
+            onClick={() => {
+              // Clean up verification state before redirecting
+              sessionStorage.removeItem("subscription_verified");
+              router.push("/");
+            }}
+          >
             Return
           </Button>
         </CardContent>

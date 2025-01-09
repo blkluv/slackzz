@@ -33,7 +33,7 @@ export const get = query({
   },
 });
 export const create = mutation({
-  args: { name: v.string() },
+  args: { name: v.string(), imageUrl: v.string() },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error("Unauthorized");
@@ -43,6 +43,7 @@ export const create = mutation({
       name: args.name,
       userId,
       joinCode,
+      imageUrl: args.imageUrl,
     });
 
     await ctx.db.insert("members", {
@@ -104,6 +105,7 @@ export const update = mutation({
   args: {
     id: v.id("workspaces"),
     name: v.string(),
+    imageUrl: v.string(),
   },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
@@ -119,8 +121,12 @@ export const update = mutation({
     if (!member || member.role !== "admin") {
       throw new Error("Unauthorized");
     }
+    if (args.imageUrl) {
+      //handle delete imageUrl in uploadingthing
+    }
     await ctx.db.patch(args.id, {
       name: args.name,
+      imageUrl: args.imageUrl,
     });
 
     return args.id;

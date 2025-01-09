@@ -17,6 +17,7 @@ const schema = defineSchema({
     name: v.string(),
     userId: v.id("users"),
     joinCode: v.string(),
+    imageUrl: v.optional(v.string()),
   }),
   members: defineTable({
     userId: v.id("users"),

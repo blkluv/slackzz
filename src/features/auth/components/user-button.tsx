@@ -21,13 +21,15 @@ import { GoDotFill } from "react-icons/go";
 import { FaRegCalendarCheck, FaPencil } from "react-icons/fa6";
 import { IoDiamondOutline } from "react-icons/io5";
 import Typography from "./typography";
+import { useSubscription } from "@/hooks/use-subscription";
 
 function UserButton() {
-  const { data, isLoading } = useCurrentUser();
+  const { data, isLoading: isLoadingCurrentUser } = useCurrentUser();
   const [isAway, setIsAway] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const { signOut } = useAuthActions();
+  const { isLoading: isLoadingSubscription, isSubscribed } = useSubscription();
 
   const handleSignOut = async () => {
     setIsLoggingOut(true);
@@ -41,7 +43,7 @@ function UserButton() {
     }
   };
 
-  if (isLoading) {
+  if (isLoadingSubscription || isLoadingCurrentUser) {
     return <Loader className="size-4 animate-spin text-muted-foreground" />;
   }
 
@@ -124,15 +126,21 @@ function UserButton() {
                         text={isAway ? "Set as active" : "Set as away"}
                       />
                     </button>
-
-                    <div className="flex gap-2 items-center hover:bg-blue-700 hover:text-white px-2 py-1 rounded cursor-pointer">
-                      <IoDiamondOutline className="text-orange-400" />
-                      <Typography
-                        variant="p"
-                        text="Upgrade workspace"
-                        className="text-sm"
-                      />
-                    </div>
+                    {!isSubscribed && (
+                      <div
+                        onClick={() => {
+                          router.replace("/subscription");
+                        }}
+                        className="flex gap-2 items-center hover:bg-blue-700 hover:text-white px-2 py-1 rounded cursor-pointer"
+                      >
+                        <IoDiamondOutline className="text-orange-400" />
+                        <Typography
+                          variant="p"
+                          text="Upgrade workspace"
+                          className="text-sm"
+                        />
+                      </div>
+                    )}
 
                     <button
                       onClick={handleSignOut}

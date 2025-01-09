@@ -1,6 +1,6 @@
-// subscription-page.tsx
+"use client";
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useAction } from "convex/react";
 import {
   Card,
   CardHeader,
@@ -10,27 +10,44 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
+import { Check, Loader } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
+import { useSubscription } from "@/hooks/use-subscription";
+import { useRouter } from "next/navigation";
 
 const SubscriptionPage = () => {
+  const { isLoading: isLoadingSubscription, isSubscribed } = useSubscription();
+
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const createStripeSession = useMutation(api.stripe.createCheckoutSession);
+  const createStripeSession = useAction(api.stripe.createCheckoutSession);
+  const priceMonthlyId = process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID;
+  const priceYearlyId = process.env.NEXT_PUBLIC_STRIPE_YEARLY_PRICE_ID;
 
   const features = [
-    "Unlimited workspaces",
-    "Priority support",
-    "Advanced analytics",
-    "Custom branding",
-    "API access",
-    "Audit logs",
+    "Extra UI customization",
+    "Extra flexibility in file sending",
   ];
+  if (isLoadingSubscription) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <Loader className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (isSubscribed) {
+    router.replace("/billing");
+    return null;
+  }
 
   const handleSubscribe = async (priceId: string) => {
     setIsLoading(true);
     try {
-      const url = await createStripeSession({ priceId });
+      const url = await createStripeSession({
+        priceId,
+        baseUrl: process.env.NEXT_PUBLIC_URL!,
+      });
       if (url) {
         window.location.href = url;
       } else {
@@ -59,9 +76,11 @@ const SubscriptionPage = () => {
           <Card className="relative">
             <CardHeader>
               <CardTitle>Monthly</CardTitle>
-              <CardDescription>Perfect for short-term projects</CardDescription>
+              <CardDescription>
+                Perfect for short-term experience
+              </CardDescription>
               <div className="text-3xl font-bold mt-4">
-                $10<span className="text-lg font-normal">/month</span>
+                $1<span className="text-lg font-normal">/month</span>
               </div>
             </CardHeader>
             <CardContent>
@@ -77,7 +96,7 @@ const SubscriptionPage = () => {
             <CardFooter>
               <Button
                 className="w-full"
-                onClick={() => handleSubscribe("price_monthly")} // Replace with your actual price ID
+                onClick={() => handleSubscribe(priceMonthlyId!)}
                 disabled={isLoading}
               >
                 {isLoading ? "Loading..." : "Subscribe Monthly"}
@@ -91,9 +110,9 @@ const SubscriptionPage = () => {
             </div>
             <CardHeader>
               <CardTitle>Yearly</CardTitle>
-              <CardDescription>Save 20% with annual billing</CardDescription>
+              <CardDescription>Save +15% with annual billing</CardDescription>
               <div className="text-3xl font-bold mt-4">
-                $96<span className="text-lg font-normal">/year</span>
+                $10<span className="text-lg font-normal">/year</span>
               </div>
             </CardHeader>
             <CardContent>
@@ -109,7 +128,7 @@ const SubscriptionPage = () => {
             <CardFooter>
               <Button
                 className="w-full bg-blue-500 hover:bg-blue-600"
-                onClick={() => handleSubscribe("price_yearly")} // Replace with your actual price ID
+                onClick={() => handleSubscribe(priceYearlyId!)}
                 disabled={isLoading}
               >
                 {isLoading ? "Loading..." : "Subscribe Yearly"}

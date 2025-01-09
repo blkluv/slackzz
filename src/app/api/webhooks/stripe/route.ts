@@ -1,4 +1,3 @@
-// app/api/webhooks/stripe/route.ts
 import { headers } from "next/headers";
 import Stripe from "stripe";
 import { ConvexHttpClient } from "convex/browser";
@@ -30,10 +29,11 @@ export async function POST(req: Request) {
       await convex.mutation(api.stripe.updateSubscription, {
         subscriptionId: subscription.id,
         currentPeriodEnd: subscription.current_period_end,
-        isActive: subscription.status === "active",
+        isActive: subscription.cancel_at_period_end ? true : false,
       });
     }
 
+    // Handling subscription cancellations or deletions
     if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as Stripe.Subscription;
 
@@ -41,6 +41,28 @@ export async function POST(req: Request) {
         subscriptionId: subscription.id,
         isActive: false,
         currentPeriodEnd: subscription.current_period_end,
+      });
+    }
+
+    // Handling successful payments (for recurring payments)
+    if (event.type === "invoice.payment_succeeded") {
+      const invoice = event.data.object as Stripe.Invoice;
+
+      await convex.mutation(api.stripe.updateSubscription, {
+        subscriptionId: invoice.subscription as string,
+        currentPeriodEnd: invoice.period_end,
+        isActive: true,
+      });
+    }
+
+    // Handling failed payments
+    if (event.type === "invoice.payment_failed") {
+      const invoice = event.data.object as Stripe.Invoice;
+
+      await convex.mutation(api.stripe.updateSubscription, {
+        subscriptionId: invoice.subscription as string,
+        isActive: false, // or you may want to mark it as "past due"
+        currentPeriodEnd: invoice.period_end,
       });
     }
 
