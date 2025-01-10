@@ -110,7 +110,15 @@ export const create = mutation({
     if (args.parentMessageId && !args.conversationId && !args.channelId) {
       const parentMessage = await ctx.db.get(args.parentMessageId);
       if (!parentMessage) throw new Error("Not found");
+      console.log(parentMessage);
+
       conversationId = parentMessage.conversationId;
+    }
+    if (args.parentMessageId) {
+      const parentMessage = await ctx.db.get(args.parentMessageId);
+      if (!parentMessage) throw new Error("Not found");
+      await ctx.db.patch(parentMessage._id, { hasReplies: true });
+      console.log("replied");
     }
 
     const messageId = await ctx.db.insert("messages", {
@@ -262,6 +270,20 @@ export const remove = mutation({
       throw new Error("UnAuthorized");
 
     await ctx.db.delete(args.id);
+
+    if (message.parentMessageId) {
+      const replies = await ctx.db
+        .query("messages")
+        .withIndex("by_parent_message_id", (q) =>
+          q.eq("parentMessageId", message.parentMessageId)
+        )
+        .collect();
+      if (replies.length == 0) {
+        await ctx.db.patch(message.parentMessageId, {
+          hasReplies: false,
+        });
+      }
+    }
     return args.id;
   },
 });

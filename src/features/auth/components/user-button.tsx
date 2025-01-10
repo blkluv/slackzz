@@ -126,17 +126,31 @@ function UserButton() {
                         text={isAway ? "Set as active" : "Set as away"}
                       />
                     </button>
-                    {!isSubscribed && (
+                    {!isSubscribed ? (
                       <div
                         onClick={() => {
-                          router.replace("/subscription");
+                          router.push("/subscription");
                         }}
                         className="flex gap-2 items-center hover:bg-blue-700 hover:text-white px-2 py-1 rounded cursor-pointer"
                       >
                         <IoDiamondOutline className="text-orange-400" />
                         <Typography
                           variant="p"
-                          text="Upgrade workspace"
+                          text="Upgrade to pro"
+                          className="text-sm"
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => {
+                          router.push("/billing");
+                        }}
+                        className="flex gap-2 items-center hover:bg-blue-700 hover:text-white px-2 py-1 rounded cursor-pointer"
+                      >
+                        <IoDiamondOutline className="text-orange-400" />
+                        <Typography
+                          variant="p"
+                          text="Manage your subscription"
                           className="text-sm"
                         />
                       </div>
