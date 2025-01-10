@@ -3,6 +3,26 @@ import { mutation, query, QueryCtx } from "./_generated/server";
 import { auth } from "./auth";
 import { Doc, Id } from "./_generated/dataModel";
 import { paginationOptsValidator } from "convex/server";
+import { api } from "./_generated/api";
+
+const validateWorkspaceAccess = async (
+  ctx: QueryCtx,
+  workspaceId: Id<"workspaces">
+) => {
+  const userId = await auth.getUserId(ctx);
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+  const currentMember = await ctx.runQuery(api.members.current, {
+    workspaceId,
+  });
+
+  if (!currentMember) {
+    throw new Error("User not in workspace");
+  }
+
+  return userId;
+};
 
 export const getMember = async (
   ctx: QueryCtx,
@@ -309,5 +329,22 @@ export const getById = query({
       member: member,
       reactions: reactionsWithoutMemberIdProperty,
     };
+  },
+});
+
+export const getChannelId = query({
+  args: {
+    messageId: v.id("messages"),
+    workspaceId: v.id("workspaces"),
+  },
+  handler: async (ctx, args) => {
+    await validateWorkspaceAccess(ctx, args.workspaceId);
+    const message = await ctx.db.get(args.messageId);
+    if (!message) {
+      console.error("no message found");
+
+      return null;
+    }
+    return message.channelId;
   },
 });

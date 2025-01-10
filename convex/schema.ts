@@ -69,29 +69,6 @@ const schema = defineSchema({
     .index("by_workspace_id", ["workspaceId"])
     .index("by_member_id", ["memberId"])
     .index("by_message_id", ["messageId"]),
-
-  threads: defineTable({
-    workspaceId: v.id("workspaces"),
-    parentMessageId: v.id("messages"),
-    threadTitle: v.optional(v.string()),
-    threadType: v.union(v.literal("channel"), v.literal("dm")),
-    threadLastActivityAt: v.number(),
-    channelId: v.optional(v.id("channels")),
-  })
-    .index("by_workspace_id_parent_message_id", [
-      "workspaceId",
-      "parentMessageId",
-    ])
-    .index("by_workspace_id", ["workspaceId"]),
-  threadsMember: defineTable({
-    threadId: v.id("threads"),
-    memberId: v.id("members"),
-    role: v.union(
-      v.literal("initiator"),
-      v.literal("member"),
-      v.literal("messageOwner")
-    ),
-  }).index("by_thread_id", ["threadId"]),
 });
 
 export default schema;

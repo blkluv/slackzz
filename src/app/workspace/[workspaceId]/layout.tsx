@@ -48,6 +48,7 @@ function WorkspaceIdLayout({ children }: WorkspaceIdLayoutProps) {
               <ResizablePanel minSize={20} defaultSize={29}>
                 {parentMessageId ? (
                   <Thread
+                    isThreadPage={window.location.pathname.includes("/thread")}
                     messageId={parentMessageId as Id<"messages">}
                     onCloseMessage={onCloseMessage}
                   />

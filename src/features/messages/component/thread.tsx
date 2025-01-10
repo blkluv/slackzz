@@ -14,12 +14,15 @@ import { useChannelId } from "@/hooks/use-channel-id";
 import { toast } from "sonner";
 import { useGetMessages } from "../api/use-get-message";
 import { differenceInMinutes, format, isToday, isYesterday } from "date-fns";
+import { useQuery } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 
 const Editor = dynamic(() => import("@/components/editor"), { ssr: false });
 
 interface ThreadProps {
   messageId: Id<"messages">;
   onCloseMessage: () => void;
+  isThreadPage: boolean;
 }
 
 type CreateMessageValue = {
@@ -32,9 +35,19 @@ type CreateMessageValue = {
 
 const TIME_THRESHOLD = 5;
 
-const Thread = ({ messageId, onCloseMessage }: ThreadProps) => {
-  const channelId = useChannelId();
+const Thread = ({ messageId, onCloseMessage, isThreadPage }: ThreadProps) => {
   const workspaceId = useWorkSpaceId();
+  const threadChannelIdQuery = useQuery(api.messages.getChannelId, {
+    messageId,
+    workspaceId,
+  })!;
+  const defaultChannelId = useChannelId();
+
+  const channelId = isThreadPage
+    ? threadChannelIdQuery
+      ? threadChannelIdQuery
+      : defaultChannelId
+    : defaultChannelId;
 
   const [editorKey, setEditorKey] = useState(0);
   const [isPending, setIsPending] = useState(false);
