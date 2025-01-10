@@ -58,7 +58,12 @@ const WorkspaceSideBar = () => {
         workspace={workspace}
       />
       <div className="flex flex-col px-2 mt-3">
-        <SidebarItem label="Threads" Icon={MessageSquareText} id={channelId} />
+        <SidebarItem
+          label="Threads"
+          Icon={MessageSquareText}
+          id={"thread"}
+          isThread
+        />
       </div>
 
       <WorkspaceSection

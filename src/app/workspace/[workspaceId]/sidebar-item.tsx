@@ -26,11 +26,21 @@ interface SidebarItemProps {
   label: string;
   id: string;
   Icon: LucideIcon | IconType;
+  isThread?: boolean;
   variant?: VariantProps<typeof sidebarItemVariants>["variant"];
 }
 
-const SidebarItem = ({ Icon, id, label, variant }: SidebarItemProps) => {
+const SidebarItem = ({
+  isThread = false,
+  Icon,
+  id,
+  label,
+  variant,
+}: SidebarItemProps) => {
   const workspaceId = useWorkSpaceId();
+  const linkTo = isThread
+    ? `/workspace/${workspaceId}/${id}`
+    : `/workspace/${workspaceId}/channel/${id}`;
   return (
     <Button
       variant={"transparent"}
@@ -38,7 +48,7 @@ const SidebarItem = ({ Icon, id, label, variant }: SidebarItemProps) => {
       className={cn(sidebarItemVariants({ variant }))}
       asChild
     >
-      <Link href={`/workspace/${workspaceId}/channel/${id}`}>
+      <Link href={linkTo}>
         <Icon className="size-3.5 mr-1 shrink-0" />
 
         <span className="text-sm truncate">{label}</span>

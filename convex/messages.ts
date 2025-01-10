@@ -241,7 +241,6 @@ export const remove = mutation({
     if (!member || member._id !== message.memberId)
       throw new Error("UnAuthorized");
 
-    /* TODO: ACTUALLY MAINTAIN THE MESSAGE BUT MARK IT AS DELETED */
     await ctx.db.delete(args.id);
     return args.id;
   },

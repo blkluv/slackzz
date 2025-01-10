@@ -23,6 +23,8 @@ import type * as members from "../members.js";
 import type * as messages from "../messages.js";
 import type * as reaction from "../reaction.js";
 import type * as stripe from "../stripe.js";
+import type * as threadMembers from "../threadMembers.js";
+import type * as threads from "../threads.js";
 import type * as upload from "../upload.js";
 import type * as user from "../user.js";
 import type * as workspaces from "../workspaces.js";
@@ -44,6 +46,8 @@ declare const fullApi: ApiFromModules<{
   messages: typeof messages;
   reaction: typeof reaction;
   stripe: typeof stripe;
+  threadMembers: typeof threadMembers;
+  threads: typeof threads;
   upload: typeof upload;
   user: typeof user;
   workspaces: typeof workspaces;

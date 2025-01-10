@@ -73,9 +73,8 @@ const MessageList = ({
       return `Yesterday around  ${format(date, "HH:mm")}`;
     }
 
-    return format(date, "EEEE, MMMM d"); // Fallback for other dates
+    return format(date, "EEEE, MMMM d");
   };
-  /* TODOS: HINTING IF THERE IS A THREAD FOR EACH MESSAGE  */
 
   return (
     <div className="flex-1 flex flex-col-reverse pb-4 overflow-y-auto  message-scrollbar">

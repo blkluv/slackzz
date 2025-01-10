@@ -10,6 +10,11 @@ const nextConfig = {
         protocol: "https",
         hostname: "steady-swordfish-279.convex.cloud",
       },
+      {
+        protocol: "https",
+        hostname: "utfs.io",
+        pathname: "/a/od86u4rt7r/*",
+      },
     ],
   },
 };
