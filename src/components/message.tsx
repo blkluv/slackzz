@@ -14,6 +14,7 @@ import { useCreateReactions } from "@/features/reactions/api/use-create-reaction
 import Reactions from "./reactions";
 import { usePanel } from "@/hooks/use-panel";
 import ThreadBar from "./thread-bar";
+import { useGetUserStatus } from "@/features/status/api/use-get-user-status";
 
 const Renderer = dynamic(() => import("@/components/renderer"), { ssr: false });
 const Editor = dynamic(() => import("@/components/editor"), { ssr: false });
@@ -42,6 +43,7 @@ interface MessageProps {
   threadImage?: string;
   threadTimestamp?: number;
   threadName?: string;
+  authorId: Id<"users">;
 }
 
 const Message = ({
@@ -52,6 +54,7 @@ const Message = ({
   authorName = "Member",
   authorImage,
   isAuthor,
+  authorId,
   reactions,
   createdAt,
   hideThreadButton,
@@ -70,7 +73,7 @@ const Message = ({
     "Delete message",
     "Are you sure you want to delete this message? This cannot be undone"
   );
-
+  const { data: userStatus } = useGetUserStatus({ id: authorId });
   const formatFullTime = (date: Date) => {
     return `${isToday(date) ? "Today" : isYesterday(date) ? "Yesterday" : format(date, "MMM d, yyyy")} at ${format(date, "h:mm:ss a")}`;
   };
@@ -209,11 +212,24 @@ const Message = ({
         )}
       >
         <div className="flex items-start gap-2">
-          <button onClick={() => onOpenProfile(memberId)}>
-            <Avatar>
-              <AvatarImage src={authorImage} />
-              <AvatarFallback>{fallback}</AvatarFallback>
-            </Avatar>
+          <button
+            onClick={() => onOpenProfile(memberId)}
+            className="relative inline-flex items-center"
+          >
+            <div className="relative">
+              <Avatar>
+                <AvatarImage src={authorImage} alt={fallback} />
+                <AvatarFallback>{fallback}</AvatarFallback>
+              </Avatar>
+              <span
+                className={`absolute top-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white ${
+                  userStatus?.currentStatus == "online"
+                    ? "bg-green-400"
+                    : "bg-gray-400"
+                }`}
+                aria-hidden="true"
+              />
+            </div>
           </button>
 
           {isEditing ? (

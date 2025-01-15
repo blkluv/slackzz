@@ -14,6 +14,7 @@ import { Loader } from "lucide-react";
 import { Id } from "../../../../convex/_generated/dataModel";
 import Thread from "@/features/messages/component/thread";
 import Profile from "@/features/members/components/profile";
+import { PresenceProvider } from "@/components/presence-provider";
 
 interface WorkspaceIdLayoutProps {
   children: ReactNode;
@@ -24,50 +25,57 @@ function WorkspaceIdLayout({ children }: WorkspaceIdLayoutProps) {
   const showPanel = !!parentMessageId || !!profileMemberId;
 
   return (
-    <div className="h-full ">
-      <Toolbar />
+    <PresenceProvider>
+      <div className="h-full ">
+        <Toolbar />
 
-      <div className="flex h-[calc(100vh-40px)] ">
-        <Sidebar />
+        <div className="flex h-[calc(100vh-40px)] ">
+          <Sidebar />
 
-        <ResizablePanelGroup autoSave="workspace-layout" direction="horizontal">
-          <ResizablePanel
-            defaultSize={20}
-            minSize={11}
-            className="bg-[#5E2C5F]"
+          <ResizablePanelGroup
+            autoSave="workspace-layout"
+            direction="horizontal"
           >
-            <WorkspaceSideBar />
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel minSize={20} defaultSize={80}>
-            {children}
-          </ResizablePanel>
-          {showPanel && (
-            <>
-              <ResizableHandle withHandle />
-              <ResizablePanel minSize={20} defaultSize={29}>
-                {parentMessageId ? (
-                  <Thread
-                    isThreadPage={window.location.pathname.includes("/thread")}
-                    messageId={parentMessageId as Id<"messages">}
-                    onCloseMessage={onCloseMessage}
-                  />
-                ) : profileMemberId ? (
-                  <Profile
-                    memberId={profileMemberId as Id<"members">}
-                    onClose={onCloseMessage}
-                  />
-                ) : (
-                  <div className="flex items-center h-full justify-center">
-                    <Loader className="size-5 animate-spin text-muted-foreground" />
-                  </div>
-                )}
-              </ResizablePanel>
-            </>
-          )}
-        </ResizablePanelGroup>
+            <ResizablePanel
+              defaultSize={20}
+              minSize={11}
+              className="bg-[#5E2C5F]"
+            >
+              <WorkspaceSideBar />
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel minSize={20} defaultSize={80}>
+              {children}
+            </ResizablePanel>
+            {showPanel && (
+              <>
+                <ResizableHandle withHandle />
+                <ResizablePanel minSize={20} defaultSize={29}>
+                  {parentMessageId ? (
+                    <Thread
+                      isThreadPage={window.location.pathname.includes(
+                        "/thread"
+                      )}
+                      messageId={parentMessageId as Id<"messages">}
+                      onCloseMessage={onCloseMessage}
+                    />
+                  ) : profileMemberId ? (
+                    <Profile
+                      memberId={profileMemberId as Id<"members">}
+                      onClose={onCloseMessage}
+                    />
+                  ) : (
+                    <div className="flex items-center h-full justify-center">
+                      <Loader className="size-5 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </ResizablePanel>
+              </>
+            )}
+          </ResizablePanelGroup>
+        </div>
       </div>
-    </div>
+    </PresenceProvider>
   );
 }
 

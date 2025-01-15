@@ -4,6 +4,36 @@ import { v } from "convex/values";
 
 const schema = defineSchema({
   ...authTables,
+  notifications: defineTable({
+    userId: v.id("users"),
+    type: v.union(
+      v.literal("info"),
+      v.literal("success"),
+      v.literal("warning"),
+      v.literal("error"),
+      v.literal("system")
+    ),
+    title: v.string(),
+    message: v.string(),
+    metadata: v.optional(v.object({})),
+    isRead: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_user_id", ["userId"])
+    .index("by_user_id_type", ["userId", "type"]),
+
+  usersStatus: defineTable({
+    userId: v.id("users"),
+    userNote: v.optional(v.string()),
+    currentStatus: v.union(v.literal("online"), v.literal("offline")),
+    customStatusEmoji: v.optional(v.string()),
+    customStatusExpiresAt: v.optional(v.union(v.number(), v.null())),
+    hasForcedOffline: v.optional(v.boolean()),
+    lastSeen: v.optional(v.number()),
+  })
+    .index("by_user_id", ["userId"])
+    .index("by_status_forcedOffline", ["currentStatus", "hasForcedOffline"]),
+
   subscriptions: defineTable({
     userId: v.id("users"),
     stripeCustomerId: v.string(),

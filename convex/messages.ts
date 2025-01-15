@@ -118,7 +118,6 @@ export const create = mutation({
       const parentMessage = await ctx.db.get(args.parentMessageId);
       if (!parentMessage) throw new Error("Not found");
       await ctx.db.patch(parentMessage._id, { hasReplies: true });
-      console.log("replied");
     }
 
     const messageId = await ctx.db.insert("messages", {

@@ -18,18 +18,23 @@ import {
 } from "@/components/ui/popover";
 import { Loader, LogOut } from "lucide-react";
 import { GoDotFill } from "react-icons/go";
-import { FaRegCalendarCheck, FaPencil } from "react-icons/fa6";
 import { IoDiamondOutline } from "react-icons/io5";
 import Typography from "./typography";
 import { useSubscription } from "@/hooks/use-subscription";
+import CustomStatusModal from "./custom-status-modal";
+import { useGetUserStatus } from "@/features/status/api/use-get-user-status";
+import { useUpdateForcedOffline } from "@/features/status/api/use-update-forced-offline";
+import { toast } from "sonner";
 
 function UserButton() {
   const { data, isLoading: isLoadingCurrentUser } = useCurrentUser();
-  const [isAway, setIsAway] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const { signOut } = useAuthActions();
   const { isLoading: isLoadingSubscription, isSubscribed } = useSubscription();
+  const { data: currentUserStatus, isLoading: isLoadingUserStatus } =
+    useGetUserStatus({ id: data?._id! });
+  const { mutate, isPending } = useUpdateForcedOffline();
 
   const handleSignOut = async () => {
     setIsLoggingOut(true);
@@ -43,11 +48,14 @@ function UserButton() {
     }
   };
 
-  if (isLoadingSubscription || isLoadingCurrentUser) {
+  if (isLoadingSubscription || isLoadingCurrentUser || isLoadingUserStatus) {
     return <Loader className="size-4 animate-spin text-muted-foreground" />;
   }
 
-  if (!data) return null;
+  if (!data || !currentUserStatus) {
+    router.push("/auth");
+    return null;
+  }
   const { image, name, email } = data;
 
   const avatarFallback =
@@ -70,7 +78,11 @@ function UserButton() {
                     </Avatar>
                     <div className="absolute z-10 rounded-full -right-[20%] -bottom-1">
                       <GoDotFill
-                        className={isAway ? "text-gray-400" : "text-green-600"}
+                        className={
+                          currentUserStatus.currentStatus == "offline"
+                            ? "text-gray-400"
+                            : "text-green-600"
+                        }
                         size={17}
                       />
                     </div>
@@ -95,35 +107,50 @@ function UserButton() {
                       <div className="flex items-center space-x-1">
                         <GoDotFill
                           className={
-                            isAway ? "text-gray-400" : "text-green-600"
+                            currentUserStatus.currentStatus == "offline"
+                              ? "text-gray-400"
+                              : "text-green-600"
                           }
                           size={17}
                         />
                         <span className="text-xs">
-                          {isAway ? "Away" : "Active"}
+                          {currentUserStatus.currentStatus == "offline"
+                            ? "Away"
+                            : "Active"}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="border group cursor-pointer p-1 rounded flex items-center space-x-2">
-                    <FaRegCalendarCheck className="group-hover:hidden" />
-                    <FaPencil className="hidden group-hover:block" />
-                    <Typography
-                      text="Set status..."
-                      variant="p"
-                      className="text-xs text-gray-600"
-                    />
-                  </div>
+                  <CustomStatusModal />
 
                   <div className="flex flex-col space-y-1">
                     <button
-                      onClick={() => setIsAway(!isAway)}
+                      disabled={isPending}
+                      onClick={() =>
+                        mutate(
+                          {
+                            hasForcedOffline:
+                              !currentUserStatus.hasForcedOffline,
+                          },
+                          {
+                            onSuccess: () => {
+                              toast.success(
+                                "Switching invisible mode successful"
+                              );
+                            },
+                          }
+                        )
+                      }
                       className="text-left hover:bg-blue-700 hover:text-white px-2 py-1 rounded"
                     >
                       <Typography
                         variant="p"
-                        text={isAway ? "Set as active" : "Set as away"}
+                        text={
+                          currentUserStatus.hasForcedOffline
+                            ? "Set to normal status"
+                            : "Set to invisible status"
+                        }
                       />
                     </button>
                     {!isSubscribed ? (

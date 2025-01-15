@@ -103,6 +103,7 @@ const MessageList = ({
                   id={message._id}
                   memberId={message.memberId}
                   authorImage={message.user.image}
+                  authorId={message.user._id!}
                   authorName={message.user.name}
                   isAuthor={message.memberId === currentMember?._id}
                   body={message.body}
