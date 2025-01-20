@@ -51,7 +51,19 @@ const ChatInput = ({ placeholder }: ChatInputProps) => {
           const { denotationChar, value, id } = mention;
 
           if (denotationChar === "@") {
+            const currentUrl = window.location.href;
+
+            const url = new URL(currentUrl);
+
+            url.searchParams.set("profileMemberId", id);
+
+            const updatedUrl = url.toString();
+
             toast.success(`You mentioned @${value}!`);
+            op.attributes = {
+              color: "#1d1c1d",
+              link: updatedUrl,
+            };
           } else if (denotationChar == "#") {
             op.attributes = {
               color: "#1d1c1d",
