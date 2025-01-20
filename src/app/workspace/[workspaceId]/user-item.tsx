@@ -32,6 +32,9 @@ interface UserItemProps {
 const UserItem = ({ id, image, label = "Member", variant }: UserItemProps) => {
   const workspaceId = useWorkSpaceId();
   const fallback = label.charAt(0).toUpperCase();
+  const avatarOptimizedImageLink = image
+    ? `/api/image-proxy?url=${encodeURIComponent(image)}&w=100`
+    : image;
   return (
     <Button
       className={cn(userItemVariants({ variant: variant }))}
@@ -41,7 +44,7 @@ const UserItem = ({ id, image, label = "Member", variant }: UserItemProps) => {
     >
       <Link href={`/workspace/${workspaceId}/member/${id}`}>
         <Avatar className="size-5 rounded-md mr-1">
-          <AvatarImage src={image} />
+          <AvatarImage src={avatarOptimizedImageLink} />
           <AvatarFallback>{fallback}</AvatarFallback>
         </Avatar>
         <span className=" text-xs truncate">{label}</span>

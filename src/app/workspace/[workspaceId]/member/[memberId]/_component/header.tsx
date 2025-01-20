@@ -35,6 +35,9 @@ const Header = ({
 
     router.push(`?${currentParams.toString()}`);
   };
+  const avatarOptimizedImageLink = memberImage
+    ? `/api/image-proxy?url=${encodeURIComponent(memberImage)}&w=100`
+    : memberImage;
   return (
     <div className="bg-white border-b  h-[49px] flex items-center px-4 overflow-hidden">
       <Button
@@ -44,7 +47,7 @@ const Header = ({
         onClick={onClick}
       >
         <Avatar className="size-6 mr-2">
-          <AvatarImage src={memberImage} />
+          <AvatarImage src={avatarOptimizedImageLink} />
           <AvatarFallback className="rounded-md bg-sky-500 text-white text-sm">
             {avatarFallBack}
           </AvatarFallback>

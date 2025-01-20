@@ -28,6 +28,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useGetUserStatus } from "@/features/status/api/use-get-user-status";
 interface ProfileProps {
   memberId: Id<"members">;
   onClose: () => void;
@@ -56,6 +57,8 @@ const Profile = ({ memberId, onClose }: ProfileProps) => {
   const { data: member, isLoading: isLoadingMember } = useGetMemberById({
     id: memberId,
   });
+  const { data: memberStatus, isLoading: isLoadingMemberStatus } =
+    useGetUserStatus({ id: member?.userId });
 
   const { mutate: updateMember } = useUpdateMember();
   const { mutate: removeMember } = useRemoveMember();
@@ -120,7 +123,7 @@ const Profile = ({ memberId, onClose }: ProfileProps) => {
     );
   };
 
-  if (isLoadingMember || isLoadingCurrentMember) {
+  if (isLoadingMember || isLoadingCurrentMember || isLoadingMemberStatus) {
     return (
       <div className="h-full flex flex-col">
         <div className="flex justify-between items-center px-4 h-[49px] border-b">
@@ -152,7 +155,9 @@ const Profile = ({ memberId, onClose }: ProfileProps) => {
     );
   }
   const fallback = member.user.name?.charAt(0).toUpperCase() ?? "M";
-
+  const avatarOptimizedImageLink = member.user.image
+    ? `/api/image-proxy?url=${encodeURIComponent(member.user.image)}&w=100`
+    : member.user.image;
   return (
     <>
       <LeaveDialog />
@@ -161,16 +166,25 @@ const Profile = ({ memberId, onClose }: ProfileProps) => {
       <div className="h-full flex flex-col">
         <div className="flex justify-between items-center px-4 h-[49px] border-b">
           <p className="text-lg font-bold">Profile</p>
+
           <Button variant={"ghost"} onClick={onClose} size={"iconSm"}>
             <XIcon className="size-5 stroke-[1.5]" />
           </Button>
         </div>
         <div className="flex flex-col items-center justify-center p-4">
-          <Avatar className="max-w-[256px] max-h-[256px] size-full">
-            <AvatarImage src={member.user.image} />
+          <Avatar className="max-w-[256px] relative max-h-[256px] size-full">
+            <AvatarImage src={avatarOptimizedImageLink} />
             <AvatarFallback className="aspect-square text-6xl">
               {fallback}
             </AvatarFallback>
+            <span
+              className={`absolute bottom-0 left-0 block h-5 w-5 rounded-full ring-2 ring-white ${
+                memberStatus?.currentStatus == "online"
+                  ? "bg-green-400"
+                  : "bg-gray-400"
+              }`}
+              aria-hidden="true"
+            />
           </Avatar>
         </div>
         <div className="flex flex-col p-4 ">
@@ -186,6 +200,18 @@ const Profile = ({ memberId, onClose }: ProfileProps) => {
               </span>
             )}
           </p>
+          <div className="flex gap-2">
+            {memberStatus?.customStatusEmoji && (
+              <div className="flex items-center text-sm ">
+                {memberStatus.customStatusEmoji}
+              </div>
+            )}
+
+            {memberStatus?.userNote && (
+              <p className="    ">{memberStatus.userNote}</p>
+            )}
+          </div>
+
           {currentMember?.role === "admin" && currentMember._id !== memberId ? (
             <div className="flex items-center gap-2 mt-4">
               <DropdownMenu>
@@ -226,6 +252,12 @@ const Profile = ({ memberId, onClose }: ProfileProps) => {
               </Button>
             </div>
           ) : null}
+          <Link
+            href={`/workspace/${workspaceId}/member/${member._id}`}
+            className="w-full text-sm text-blue-500"
+          >
+            Talk to {member.user.name}
+          </Link>
         </div>
         <Separator />
         <div className="flex flex-col p-4 ">

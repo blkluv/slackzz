@@ -222,6 +222,7 @@ const Thread = ({ messageId, onCloseMessage, isThreadPage }: ThreadProps) => {
                 return (
                   <Message
                     key={message._id}
+                    authorId={message.user._id!}
                     id={message._id}
                     memberId={message.memberId}
                     authorImage={message.user.image}
@@ -281,6 +282,7 @@ const Thread = ({ messageId, onCloseMessage, isThreadPage }: ThreadProps) => {
           authorName={message.user.name}
           body={message.body}
           image={message.image}
+          authorId={message.user._id!}
           reactions={message.reactions}
           updatedAt={message.updatedAt}
           createdAt={message._creationTime}

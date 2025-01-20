@@ -9,12 +9,14 @@ const ConversationHero = ({
   image?: string;
 }) => {
   const avatarFallBack = name.charAt(0).toUpperCase();
-
+  const avatarOptimizedImageLink = image
+    ? `/api/image-proxy?url=${encodeURIComponent(image)}&w=100`
+    : image;
   return (
     <div className="mt-[88px] mx-5 mb-4 ">
       <div className="flex items-center gap-x-1 mb-2">
         <Avatar className="size-14 mr-2">
-          <AvatarImage src={image} />
+          <AvatarImage src={avatarOptimizedImageLink} />
           <AvatarFallback>{avatarFallBack}</AvatarFallback>
         </Avatar>
         <p className="text-2xl font-bold"> {name}</p>

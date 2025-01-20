@@ -7,6 +7,80 @@ const populateUser = (ctx: QueryCtx, id: Id<"users">) => {
   return ctx.db.get(id);
 };
 
+async function populateUserWithStatus(ctx: QueryCtx, userId: Id<"users">) {
+  const user = await populateUser(ctx, userId);
+
+  if (!user) return null;
+
+  const userStatus = await ctx.db
+    .query("usersStatus")
+    .withIndex("by_user_id", (q) => q.eq("userId", userId))
+    .unique();
+
+  return {
+    ...user,
+    userStatus,
+  };
+}
+
+export const get = query({
+  args: {
+    workspaceId: v.id("workspaces"),
+    isNeedStatus: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+
+    if (!userId) return [];
+
+    const member = await ctx.db
+      .query("members")
+      .withIndex("by_workspace_id_user_id", (q) =>
+        q.eq("userId", userId).eq("workspaceId", args.workspaceId)
+      )
+      .unique();
+    if (!member) return [];
+
+    const data = await ctx.db
+      .query("members")
+      .withIndex("by_workspace_id", (q) =>
+        q.eq("workspaceId", args.workspaceId)
+      )
+      .collect();
+
+    const members = [];
+
+    if (args.isNeedStatus) {
+      for (const memberData of data) {
+        const userWithStatus = await populateUserWithStatus(
+          ctx,
+          memberData.userId
+        );
+
+        if (userWithStatus) {
+          members.push({
+            ...memberData,
+            user: userWithStatus,
+          });
+        }
+      }
+    } else {
+      for (const memberData of data) {
+        const user = await populateUser(ctx, memberData.userId);
+
+        if (user) {
+          members.push({
+            ...memberData,
+            user: user,
+          });
+        }
+      }
+    }
+
+    return members;
+  },
+});
+
 export const getById = query({
   args: { id: v.id("members") },
   handler: async (ctx, args) => {
@@ -33,45 +107,6 @@ export const getById = query({
       ...member,
       user,
     };
-  },
-});
-
-export const get = query({
-  args: { workspaceId: v.id("workspaces") },
-  handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-
-    if (!userId) return [];
-
-    const member = await ctx.db
-      .query("members")
-      .withIndex("by_workspace_id_user_id", (q) =>
-        q.eq("userId", userId).eq("workspaceId", args.workspaceId)
-      )
-      .unique();
-    if (!member) return [];
-
-    const data = await ctx.db
-      .query("members")
-      .withIndex("by_workspace_id", (q) =>
-        q.eq("workspaceId", args.workspaceId)
-      )
-      .collect();
-
-    const members = [];
-
-    for (const memberData of data) {
-      const user = await populateUser(ctx, memberData.userId);
-
-      if (user) {
-        members.push({
-          ...memberData,
-          user,
-        });
-      }
-    }
-
-    return members;
   },
 });
 

@@ -33,7 +33,7 @@ function UserButton() {
   const { signOut } = useAuthActions();
   const { isLoading: isLoadingSubscription, isSubscribed } = useSubscription();
   const { data: currentUserStatus, isLoading: isLoadingUserStatus } =
-    useGetUserStatus({ id: data?._id! });
+    useGetUserStatus({ id: data?._id });
   const { mutate, isPending } = useUpdateForcedOffline();
 
   const handleSignOut = async () => {
@@ -57,7 +57,9 @@ function UserButton() {
     return null;
   }
   const { image, name, email } = data;
-
+  const avatarOptimizedImageLink = image
+    ? `/api/image-proxy?url=${encodeURIComponent(image)}&w=100`
+    : image;
   const avatarFallback =
     name?.charAt(0).toUpperCase() || email?.charAt(0).toUpperCase() || "?";
 
@@ -71,7 +73,10 @@ function UserButton() {
                 <div className="h-10 w-10 relative cursor-pointer">
                   <div className="h-full w-full rounded-lg overflow-hidden">
                     <Avatar className="h-full w-full">
-                      <AvatarImage src={image} alt={name || "user"} />
+                      <AvatarImage
+                        src={avatarOptimizedImageLink}
+                        alt={name || "user"}
+                      />
                       <AvatarFallback className="bg-sky-500">
                         {avatarFallback}
                       </AvatarFallback>
@@ -93,7 +98,10 @@ function UserButton() {
                 <div className="flex flex-col space-y-4">
                   <div className="flex space-x-3">
                     <Avatar>
-                      <AvatarImage src={image} alt={name || "user"} />
+                      <AvatarImage
+                        src={avatarOptimizedImageLink}
+                        alt={name || "user"}
+                      />
                       <AvatarFallback className="bg-sky-500">
                         {avatarFallback}
                       </AvatarFallback>
@@ -122,7 +130,7 @@ function UserButton() {
                     </div>
                   </div>
 
-                  <CustomStatusModal />
+                  <CustomStatusModal currentUserStatus={currentUserStatus} />
 
                   <div className="flex flex-col space-y-1">
                     <button

@@ -198,6 +198,9 @@ const Message = ({
         </div>
       </>
     );
+  const avatarOptimizedImageLink = authorImage
+    ? `/api/image-proxy?url=${encodeURIComponent(authorImage)}&w=100`
+    : authorImage;
   /* Main  */
   return (
     <>
@@ -218,7 +221,7 @@ const Message = ({
           >
             <div className="relative">
               <Avatar>
-                <AvatarImage src={authorImage} alt={fallback} />
+                <AvatarImage src={avatarOptimizedImageLink} alt={fallback} />
                 <AvatarFallback>{fallback}</AvatarFallback>
               </Avatar>
               <span

@@ -26,19 +26,19 @@ interface SidebarItemProps {
   label: string;
   id: string;
   Icon: LucideIcon | IconType;
-  isThread?: boolean;
+  isFunctionalRoute?: boolean;
   variant?: VariantProps<typeof sidebarItemVariants>["variant"];
 }
 
 const SidebarItem = ({
-  isThread = false,
+  isFunctionalRoute = false,
   Icon,
   id,
   label,
   variant,
 }: SidebarItemProps) => {
   const workspaceId = useWorkSpaceId();
-  const linkTo = isThread
+  const linkTo = isFunctionalRoute
     ? `/workspace/${workspaceId}/${id}`
     : `/workspace/${workspaceId}/channel/${id}`;
   return (

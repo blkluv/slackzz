@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   HashIcon,
   Loader,
+  User,
   MessageSquareText,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -62,12 +63,14 @@ const WorkspaceSideBar = () => {
   }
 
   const getItemVariant = (
-    type: "thread" | "channel" | "member",
+    type: "thread" | "channel" | "member" | "memberList",
     id?: string
   ) => {
     switch (type) {
       case "thread":
         return pathname.includes("/thread") ? "active" : "default";
+      case "memberList":
+        return pathname.includes("/memberList") ? "active" : "default";
       case "channel":
         return channelId === id ? "active" : "default";
       case "member":
@@ -89,7 +92,14 @@ const WorkspaceSideBar = () => {
           label="Threads"
           Icon={MessageSquareText}
           id="thread"
-          isThread
+          isFunctionalRoute
+        />
+        <SidebarItem
+          variant={getItemVariant("memberList")}
+          label="Members"
+          Icon={User}
+          id="memberList"
+          isFunctionalRoute
         />
       </div>
 

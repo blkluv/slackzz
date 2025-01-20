@@ -25,10 +25,14 @@ export const PresenceProvider = ({
   children: React.ReactNode;
 }) => {
   const router = useRouter();
-  const { isAuthenticated } = useConvexAuth();
+  const { isAuthenticated, isLoading } = useConvexAuth();
   const socketRef = useRef<Socket | null>(null);
 
-  if (!isAuthenticated) router.replace("/auth");
+  useEffect(() => {
+    if (!isAuthenticated && !isLoading) {
+      router.replace("/auth");
+    }
+  }, [isAuthenticated, router, isLoading]);
 
   const { data: currentUser } = useCurrentUser();
   const userId = currentUser?._id;

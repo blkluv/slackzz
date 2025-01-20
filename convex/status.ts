@@ -19,11 +19,14 @@ const cleanExpiredStatus = (status: Doc<"usersStatus">) => {
 };
 
 export const getUserStatus = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.optional(v.id("users")) },
   handler: async (ctx, args) => {
+    if (args.userId == undefined || !args.userId) {
+      return undefined;
+    }
     const status = await ctx.db
       .query("usersStatus")
-      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId!))
       .first();
 
     if (!status) return null;

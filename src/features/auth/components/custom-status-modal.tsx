@@ -39,6 +39,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useUpdateUserStatus } from "@/features/status/api/use-update-user-status";
 import { toast } from "sonner";
+import { Doc } from "../../../../convex/_generated/dataModel";
 
 const formSchema = z.object({
   emoji: z.string().optional(),
@@ -60,7 +61,11 @@ const getExpirationOptions = () => [
   { label: "Custom time", value: "custom" },
 ];
 
-const CustomStatusModal = () => {
+const CustomStatusModal = ({
+  currentUserStatus,
+}: {
+  currentUserStatus: Doc<"usersStatus">;
+}) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [customDate, setCustomDate] = useState<Date | undefined>();
@@ -68,8 +73,8 @@ const CustomStatusModal = () => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      emoji: "",
-      status: "",
+      emoji: currentUserStatus.customStatusEmoji || "",
+      status: currentUserStatus.userNote || "",
       expireTime: "dont_clear",
     },
   });
