@@ -36,20 +36,40 @@ const ChatInput = ({ placeholder }: ChatInputProps) => {
     body,
     image,
   }: {
-    body: string;
+    body: string; // Quill Delta JSON string
     image: File | null;
   }) => {
     try {
       editorRef.current?.enable(false);
       setIsPending(true);
 
+      const jsonBody = JSON.parse(body);
+
+      jsonBody.ops.forEach((op: any) => {
+        if (op.insert && op.insert.mention) {
+          const mention = op.insert.mention;
+          const { denotationChar, value, id } = mention;
+
+          if (denotationChar === "@") {
+            toast.success(`You mentioned @${value}!`);
+          } else if (denotationChar == "#") {
+            op.attributes = {
+              color: "#1d1c1d",
+              link: `/workspace/${workspaceId}/channel/${id}`,
+            };
+          }
+        }
+      });
+
+      // Prepare the message values
       const values: CreateMessageValue = {
-        body,
+        body: JSON.stringify(jsonBody),
         channelId,
         workspaceId,
         image: undefined,
       };
 
+      // If there's an image, handle uploading
       if (image) {
         const url = await generateUploadUrl(null, { throwError: true });
 
@@ -69,16 +89,18 @@ const ChatInput = ({ placeholder }: ChatInputProps) => {
         values.image = storageId;
       }
 
+      // Send the message
       createMessage(values, { throwError: true });
       setEditorKey((prev) => prev + 1);
     } catch (error) {
-      toast.error("failed to send text");
+      toast.error("Failed to send text");
       console.log(error);
     } finally {
       setIsPending(false);
       editorRef.current?.enable(true);
     }
   };
+
   return (
     <div className="px-5 w-full">
       <Editor

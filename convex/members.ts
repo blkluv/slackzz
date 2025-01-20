@@ -3,7 +3,7 @@ import { mutation, query, QueryCtx } from "./_generated/server";
 import { auth } from "./auth";
 import { Id } from "./_generated/dataModel";
 
-const populateUser = (ctx: QueryCtx, id: Id<"users">) => {
+export const populateUser = (ctx: QueryCtx, id: Id<"users">) => {
   return ctx.db.get(id);
 };
 

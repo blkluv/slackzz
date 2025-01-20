@@ -1,6 +1,9 @@
 import Quill from "quill";
 import { useEffect, useRef, useState } from "react";
+import "quill-mention/autoregister";
+import MagicUrl from "quill-magic-url";
 
+Quill.register("modules/magicUrl", MagicUrl);
 interface RendererProps {
   value: string;
 }

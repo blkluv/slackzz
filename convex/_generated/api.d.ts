@@ -24,6 +24,7 @@ import type * as messages from "../messages.js";
 import type * as reaction from "../reaction.js";
 import type * as status from "../status.js";
 import type * as stripe from "../stripe.js";
+import type * as suggestion from "../suggestion.js";
 import type * as thread from "../thread.js";
 import type * as upload from "../upload.js";
 import type * as user from "../user.js";
@@ -47,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   reaction: typeof reaction;
   status: typeof status;
   stripe: typeof stripe;
+  suggestion: typeof suggestion;
   thread: typeof thread;
   upload: typeof upload;
   user: typeof user;

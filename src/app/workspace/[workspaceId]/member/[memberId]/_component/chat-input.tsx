@@ -41,9 +41,23 @@ const ChatInput = ({ placeholder, conversationId }: ChatInputProps) => {
     try {
       editorRef.current?.enable(false);
       setIsPending(true);
+      const jsonBody = JSON.parse(body);
 
+      jsonBody.ops.forEach((op) => {
+        if (op.insert && op.insert.mention) {
+          const mention = op.insert.mention;
+          const { denotationChar, id } = mention;
+
+          if (denotationChar == "#") {
+            op.attributes = {
+              color: "#1d1c1d",
+              link: `/workspace/${workspaceId}/channel/${id}`,
+            };
+          }
+        }
+      });
       const values: CreateMessageValue = {
-        body,
+        body: JSON.stringify(jsonBody),
         conversationId,
         workspaceId,
         image: undefined,

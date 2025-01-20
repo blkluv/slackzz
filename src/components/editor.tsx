@@ -16,10 +16,21 @@ import { Delta, Op } from "quill/core";
 import { cn } from "@/lib/utils";
 import EmojiPopover from "./emoji-popover";
 import Image from "next/image";
+import "quill-mention/autoregister";
+import MagicUrl from "quill-magic-url";
+import { usePathname } from "next/navigation";
+import { useGetSuggestions } from "@/features/suggestion/api/use-get-suggestion";
+import { useWorkSpaceId } from "@/hooks/use-workspace-id";
+import { Id } from "../../convex/_generated/dataModel";
 
+Quill.register("modules/magicUrl", MagicUrl);
 type EditorValue = {
   image: File | null;
   body: string;
+};
+type SuggestionValue = {
+  id: Id<"members"> | Id<"channels">;
+  value?: string;
 };
 
 interface EditorProps {
@@ -42,9 +53,11 @@ const Editor = ({
   onCancel,
 }: EditorProps) => {
   const [text, setText] = useState("");
+  const pathName = usePathname();
+  const isDMs = pathName.includes("member");
   const [image, setImage] = useState<File | null>(null);
   const [isToolbarVisible, setIsToolbarVisible] = useState(true);
-
+  const workspaceId = useWorkSpaceId();
   const containerRef = useRef<HTMLDivElement>(null);
   const submitRef = useRef(onSubmit);
   const placeHolderRef = useRef(placeHolder);
@@ -52,6 +65,21 @@ const Editor = ({
   const defaultValueRef = useRef(defaultValue);
   const disabledRef = useRef(disabled);
   const imageElementRef = useRef<HTMLInputElement>(null);
+  const { data, isLoading } = useGetSuggestions({
+    isNeedUser: !isDMs,
+    workspaceId,
+  });
+  const channelsRef = useRef<null | SuggestionValue[]>(null);
+  const workspaceMembersRef = useRef<null | SuggestionValue[]>(null);
+
+  useEffect(() => {
+    if (!isLoading && Array.isArray(data) && data.length == 2) {
+      workspaceMembersRef.current = data[0];
+      channelsRef.current = data[1];
+    } else if (data?.length == 1) {
+      channelsRef.current = data[0];
+    }
+  }, [isLoading, data]);
 
   useLayoutEffect(() => {
     submitRef.current = onSubmit;
@@ -71,9 +99,42 @@ const Editor = ({
       theme: "snow",
       placeholder: placeHolderRef.current,
       modules: {
+        magicUrl: true,
+        mention: {
+          allowedChars: /^[A-Za-z\sÅÄÖåäö]*$/,
+          mentionDenotationChars: isDMs ? ["#"] : ["@", "#"],
+          source: function (
+            searchTerm: string,
+            renderList: (values: SuggestionValue[], searchTerm: string) => void,
+            mentionChar: string
+          ) {
+            let values;
+
+            if (mentionChar === "#") {
+              values = channelsRef.current;
+            } else {
+              values = workspaceMembersRef.current;
+            }
+            if (!values) {
+              return;
+            }
+            if (searchTerm.length === 0) {
+              renderList(values, searchTerm);
+            } else {
+              const matches = [];
+              for (let i = 0; i < values.length; i++)
+                if (
+                  ~values[i].value
+                    .toLowerCase()
+                    .indexOf(searchTerm.toLowerCase())
+                )
+                  matches.push(values[i]);
+              renderList(matches, searchTerm);
+            }
+          },
+        },
         toolbar: [
           ["bold", "italic", "strike"],
-          ["link"],
           [{ list: "ordered" }, { list: "bullet" }],
         ],
         keyboard: {
@@ -120,7 +181,7 @@ const Editor = ({
       if (quillRef.current) quillRef.current = null;
       if (innerRef) innerRef.current = null;
     };
-  }, [innerRef]);
+  }, [innerRef, channelsRef, workspaceMembersRef]);
 
   const toggleToolbar = () => {
     setIsToolbarVisible((cur) => !cur);
@@ -149,7 +210,7 @@ const Editor = ({
       />
       <div
         className={cn(
-          "flex flex-col border border-slate-200 rounded-md overflow-hidden focus-within:border-slate-300 focus-within:shadow-sm transition bg-white",
+          "flex flex-col border border-slate-200 rounded-md focus-within:border-slate-300 focus-within:shadow-sm transition bg-white",
           disabled && "opacity-50"
         )}
       >
