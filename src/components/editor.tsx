@@ -81,7 +81,7 @@ const Editor = ({
 
   useEffect(() => {
     if (!isLoading && Array.isArray(data) && data.length == 2) {
-      workspaceMembersRef.current = data[0];
+      workspaceMembersRef.current = [...data[0]];
       channelsRef.current = data[1];
     } else if (data?.length == 1) {
       channelsRef.current = data[0];

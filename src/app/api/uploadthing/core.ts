@@ -12,8 +12,6 @@ export const imagesRouter = {
       maxFileCount: 1,
     },
   }).onUploadComplete(async ({ file }) => {
-    console.log("doneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
-
     return { fileUrl: file.url };
   }),
 } satisfies FileRouter;

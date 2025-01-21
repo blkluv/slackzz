@@ -16,8 +16,6 @@ const Renderer = ({ value, links }: RendererProps) => {
   const [isEmpty, setIsEmpty] = useState(false);
   const rendererRef = useRef<HTMLDivElement>(null);
   const params = useSearchParams();
-
-  // Memoize Quill instance creation
   const quill = useMemo(() => {
     const quillInstance = new Quill(document.createElement("div"), {
       theme: "snow",
@@ -57,7 +55,7 @@ const Renderer = ({ value, links }: RendererProps) => {
   return (
     <>
       <div ref={rendererRef} className="ql-editor ql-renderer" />
-      {links.length > 0 && !params.has("parentMessageId") && (
+      {links?.length > 0 && !params.has("parentMessageId") && (
         <article className="my-4 flex flex-col gap-2">
           {links.map((link, index) => (
             <LinkPreview url={link} key={`${link}-${index}`} />

@@ -110,7 +110,6 @@ export const create = mutation({
     if (args.parentMessageId && !args.conversationId && !args.channelId) {
       const parentMessage = await ctx.db.get(args.parentMessageId);
       if (!parentMessage) throw new Error("Not found");
-      console.log(parentMessage);
 
       conversationId = parentMessage.conversationId;
     }

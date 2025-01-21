@@ -1,14 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
+import Link from "next/link";
 import { IconType } from "react-icons/lib";
 
 interface SideBarButtonProps {
   Icon: LucideIcon | IconType;
   label: string;
+  goto: string;
   isActive?: boolean;
 }
-const SideBarButton = ({ Icon, isActive, label }: SideBarButtonProps) => {
+const SideBarButton = ({ Icon, isActive, label, goto }: SideBarButtonProps) => {
   return (
     <div className="flex flex-col items-center justify-center gap-y-0.5 cursor-pointer group">
       <Button
@@ -18,7 +20,9 @@ const SideBarButton = ({ Icon, isActive, label }: SideBarButtonProps) => {
         )}
         variant="transparent"
       >
-        <Icon className="size-5 text-white group-hover:scale-110 transition-all" />
+        <Link href={goto}>
+          <Icon className="size-5 text-white group-hover:scale-110 transition-all" />
+        </Link>
       </Button>
       <span className="text-[11px] text-white group-hover:text-accent">
         {label}

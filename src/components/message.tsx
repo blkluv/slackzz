@@ -1,27 +1,41 @@
 import { Doc, Id } from "../../convex/_generated/dataModel";
 import dynamic from "next/dynamic";
 import { format, isToday, isYesterday } from "date-fns";
-import Hint from "./hint";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Crown, Loader } from "lucide-react";
+import { toast } from "sonner";
+
+import Hint from "./hint";
 import ThumbNail from "./thumbnail";
 import ToolBar from "./toolbar";
-import { useUpdateMessage } from "@/features/messages/api/use-update-message";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { useRemoveMessage } from "@/features/messages/api/use-remove-message";
-import useConfirm from "@/hooks/use-confirm-tsx";
-import { useCreateReactions } from "@/features/reactions/api/use-create-reactions";
 import Reactions from "./reactions";
-import { usePanel } from "@/hooks/use-panel";
 import ThreadBar from "./thread-bar";
+import { cn } from "@/lib/utils";
+import { usePanel } from "@/hooks/use-panel";
+import useConfirm from "@/hooks/use-confirm-tsx";
+import { useUpdateMessage } from "@/features/messages/api/use-update-message";
+import { useRemoveMessage } from "@/features/messages/api/use-remove-message";
+import { useCreateReactions } from "@/features/reactions/api/use-create-reactions";
 import { useGetUserStatus } from "@/features/status/api/use-get-user-status";
 import { UseGetIsProUser } from "@/features/subscription/api/use-get-is-pro-user";
-import { Crown, Loader } from "lucide-react";
-import { useEffect, useState } from "react";
 
-const Renderer = dynamic(() => import("@/components/renderer"), { ssr: false });
-const Editor = dynamic(() => import("@/components/editor"), { ssr: false });
+// Dynamically import heavy components
+const Renderer = dynamic(() => import("@/components/renderer"), {
+  ssr: false,
+  loading: () => (
+    <div className="animate-pulse bg-gray-100 h-6 rounded w-full" />
+  ),
+});
 
+const Editor = dynamic(() => import("@/components/editor"), {
+  ssr: false,
+  loading: () => (
+    <div className="animate-pulse bg-gray-100 h-24 rounded w-full" />
+  ),
+});
+
+// Types
 interface MessageProps {
   id: Id<"messages">;
   memberId: Id<"members">;
@@ -49,17 +63,30 @@ interface MessageProps {
   authorId: Id<"users">;
   currentMemberId?: Id<"members">;
 }
-interface QuillOperation {
-  insert?: {
-    mention?: any;
-    [key: string]: any;
-  };
-  attributes?: {
-    link?: string;
-    [key: string]: any;
-  };
-}
-const Message = ({
+
+// Utils - kept outside component for performance
+const formatFullTime = (date: Date) => {
+  return `${isToday(date) ? "Today" : isYesterday(date) ? "Yesterday" : format(date, "MMM d, yyyy")} at ${format(date, "h:mm:ss a")}`;
+};
+
+const getAvatarOptimizedImageLink = (authorImage: string | undefined) => {
+  return authorImage
+    ? `/api/image-proxy?url=${encodeURIComponent(authorImage)}&w=100`
+    : authorImage;
+};
+
+// Style constants
+const STYLE_CONSTANTS = {
+  editing:
+    "bg-amber-100/40 hover:bg-amber-100/60 transition-colors duration-200",
+  mentioned:
+    "bg-yellow-100/50 hover:bg-yellow-100/60 transition-colors duration-200",
+  removing:
+    "bg-rose-500/50 transform transition-all scale-y-0 origin-bottom duration-200",
+  base: "flex flex-col gap-2 p-1.5 px-5 hover:bg-slate-100/60 group relative transition-colors duration-200",
+} as const;
+
+export default function Message({
   id,
   memberId,
   body,
@@ -80,45 +107,25 @@ const Message = ({
   threadImage,
   threadName,
   threadTimestamp,
-}: MessageProps) => {
+}: MessageProps) {
   const { onOpenMessage, onCloseMessage, parentMessageId, onOpenProfile } =
     usePanel();
   const [ConfirmDialog, confirm] = useConfirm(
     "Delete message",
     "Are you sure you want to delete this message? This cannot be undone."
   );
+
+  // States
+  const [isMentioned, setIsMentioned] = useState<boolean>(false);
+  const [links, setLinks] = useState<string[]>([]);
+
+  // Queries
   const { data: userStatus } = useGetUserStatus({ id: authorId });
   const { data: isPro, isLoading: isLoadingPro } = UseGetIsProUser({
     userId: authorId,
   });
-  const [isMentioned, setIsMentioned] = useState<boolean>(false);
-  const [links, setLinks] = useState<string[]>([]);
 
-  useEffect(() => {
-    const jsonBody = JSON.parse(body);
-    const uniqueLinks = new Set<string>();
-    let flagMentioned = false;
-    jsonBody.ops.forEach((op: QuillOperation) => {
-      if (op.insert && !op.insert.mention && op.attributes?.link) {
-        uniqueLinks.add(op.attributes.link);
-      } else if (
-        currentMemberId &&
-        op.insert?.mention?.id === currentMemberId
-      ) {
-        flagMentioned = true;
-      }
-    });
-    setIsMentioned(flagMentioned);
-
-    setLinks(Array.from(uniqueLinks));
-  }, [body, currentMemberId]);
-
-  const formatFullTime = (date: Date) => {
-    return `${isToday(date) ? "Today" : isYesterday(date) ? "Yesterday" : format(date, "MMM d, yyyy")} at ${format(date, "h:mm:ss a")}`;
-  };
-
-  const fallback = authorName.charAt(0).toUpperCase();
-
+  // Mutations
   const { mutate: updateMessage, isPending: isUpdatingMessage } =
     useUpdateMessage();
   const { mutate: removeMessage, isPending: isRemovingMessage } =
@@ -126,18 +133,62 @@ const Message = ({
   const { mutate: reactMessage, isPending: isReactingMessage } =
     useCreateReactions();
 
-  const isPending = isUpdatingMessage || isReactingMessage;
+  // Memoized values
+  const isPending = useMemo(
+    () => isUpdatingMessage || isReactingMessage,
+    [isUpdatingMessage, isReactingMessage]
+  );
 
-  const handleReaction = (value: string) => {
-    reactMessage(
-      { messageId: id, value },
-      {
-        onError: () => toast.error("Failed to toggle reaction."),
+  const fallback = useMemo(
+    () => authorName.charAt(0).toUpperCase(),
+    [authorName]
+  );
+
+  const avatarOptimizedImageLink = useMemo(
+    () => getAvatarOptimizedImageLink(authorImage),
+    [authorImage]
+  );
+
+  // Process message body
+  useEffect(() => {
+    try {
+      const jsonBody = JSON.parse(body);
+      const uniqueLinks = new Set<string>();
+      let flagMentioned = false;
+
+      for (const op of jsonBody.ops) {
+        if (op.insert && !op.insert.mention && op.attributes?.link) {
+          uniqueLinks.add(op.attributes.link);
+        } else if (
+          currentMemberId &&
+          op.insert?.mention?.id === currentMemberId
+        ) {
+          flagMentioned = true;
+          break;
+        }
       }
-    );
-  };
 
-  const handleDeleteMessage = async () => {
+      setIsMentioned(flagMentioned);
+      setLinks(Array.from(uniqueLinks));
+    } catch (error) {
+      console.error("Error parsing message body:", error);
+    }
+  }, [body, currentMemberId]);
+
+  // Handlers
+  const handleReaction = useCallback(
+    (value: string) => {
+      reactMessage(
+        { messageId: id, value },
+        {
+          onError: () => toast.error("Failed to toggle reaction."),
+        }
+      );
+    },
+    [id, reactMessage]
+  );
+
+  const handleDeleteMessage = useCallback(async () => {
     const ok = await confirm();
     if (!ok) return;
 
@@ -151,39 +202,39 @@ const Message = ({
         onError: () => toast.error("Message deletion failed."),
       }
     );
-  };
+  }, [confirm, id, onCloseMessage, parentMessageId, removeMessage]);
 
-  const handleUpdateMessage = ({ body }: { body: string }) => {
-    updateMessage(
-      { body, id },
-      {
-        onSuccess: () => {
-          toast.success("Message updated.");
-          setEditingId(null);
-        },
-        onError: () => toast.error("Message update failed."),
-      }
-    );
-  };
+  const handleUpdateMessage = useCallback(
+    ({ body }: { body: string }) => {
+      updateMessage(
+        { body, id },
+        {
+          onSuccess: () => {
+            toast.success("Message updated.");
+            setEditingId(null);
+          },
+          onError: () => toast.error("Message update failed."),
+        }
+      );
+    },
+    [id, setEditingId, updateMessage]
+  );
 
-  if (isCompact)
+  const messageClassName = cn(
+    STYLE_CONSTANTS.base,
+    isEditing && STYLE_CONSTANTS.editing,
+    isMentioned && STYLE_CONSTANTS.mentioned,
+    isRemovingMessage && STYLE_CONSTANTS.removing
+  );
+
+  if (isCompact) {
     return (
       <>
         <ConfirmDialog />
-        <div
-          className={cn(
-            "flex flex-col gap-2 p-1.5 px-5 hover:bg-red-100/60 group relative ",
-            isEditing && "bg-[#f2c74433] hover:bg-[#f2c74433]/80",
-            isMentioned && "bg-yellow-500/25 hover:bg-yellow-500/15",
-            isMentioned && "bg-yellow-500/25 hover:bg-yellow-500/15",
-
-            isRemovingMessage &&
-              "bg-rose-500/50 transform transition-all scale-y-0 origin-bottom duration-200"
-          )}
-        >
-          <div className=" flex items-start gap-2 ">
+        <div className={messageClassName}>
+          <div className="flex items-start gap-2">
             <Hint label={formatFullTime(new Date(createdAt))}>
-              <button className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 w-[40px] leading-[22px] text-center hover:underline">
+              <button className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 w-[40px] leading-[22px] text-center hover:underline transition-opacity">
                 {format(new Date(createdAt), "hh:mm")}
               </button>
             </Hint>
@@ -193,21 +244,19 @@ const Message = ({
                   onSubmit={handleUpdateMessage}
                   disabled={isPending}
                   defaultValue={JSON.parse(body)}
-                  onCancel={() => {
-                    setEditingId(null);
-                  }}
+                  onCancel={() => setEditingId(null)}
                   variant="update"
                 />
               </div>
             ) : (
-              <div className="flex flex-col w-full ">
+              <div className="flex flex-col w-full">
                 <Renderer links={links} value={body} />
                 <ThumbNail url={image} />
-                {updatedAt ? (
+                {updatedAt && (
                   <span className="text-xs text-muted-foreground">
                     (edited)
                   </span>
-                ) : null}
+                )}
                 <Reactions data={reactions} onChange={handleReaction} />
                 <ThreadBar
                   count={threadCount}
@@ -233,24 +282,12 @@ const Message = ({
         </div>
       </>
     );
-  const avatarOptimizedImageLink = authorImage
-    ? `/api/image-proxy?url=${encodeURIComponent(authorImage)}&w=100`
-    : authorImage;
-  /* Main  */
+  }
+
   return (
     <>
       <ConfirmDialog />
-
-      <div
-        className={cn(
-          "flex flex-col gap-2 p-1.5 px-5 hover:bg-red-100/60 group relative",
-          isEditing && "bg-[#f2c74433] hover:bg-[#f2c74433]/80",
-          isMentioned && "bg-yellow-500/25 hover:bg-yellow-500/15",
-
-          isRemovingMessage &&
-            "bg-rose-500/50 transform transition-all scale-y-0 origin-bottom duration-200"
-        )}
-      >
+      <div className={messageClassName}>
         <div className="flex items-start gap-2">
           <button
             onClick={() => onOpenProfile(memberId)}
@@ -262,11 +299,12 @@ const Message = ({
                 <AvatarFallback>{fallback}</AvatarFallback>
               </Avatar>
               <span
-                className={`absolute top-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white ${
-                  userStatus?.currentStatus == "online"
-                    ? "bg-green-400"
+                className={cn(
+                  "absolute top-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white transition-colors duration-200",
+                  userStatus?.currentStatus === "online"
+                    ? "bg-emerald-400"
                     : "bg-gray-400"
-                }`}
+                )}
                 aria-hidden="true"
               />
             </div>
@@ -278,50 +316,42 @@ const Message = ({
                 onSubmit={handleUpdateMessage}
                 disabled={isPending}
                 defaultValue={JSON.parse(body)}
-                onCancel={() => {
-                  setEditingId(null);
-                }}
+                onCancel={() => setEditingId(null)}
                 variant="update"
               />
             </div>
           ) : (
-            <div className="flex flex-col w-full overflow-hidden ">
-              <div className="text-sm">
+            <div className="flex flex-col w-full overflow-hidden">
+              <div className="text-sm flex items-center gap-2">
                 <button
-                  className="font-bold text-primary hover:underline "
+                  className="font-bold text-primary hover:underline"
                   onClick={() => onOpenProfile(memberId)}
                 >
                   {authorName}
                 </button>
 
                 {isLoadingPro ? (
-                  <>
-                    <span>&nbsp;&nbsp;&nbsp;</span>
-
-                    <Loader className=" inline-block size-3  animate-spin text-muted-foreground" />
-                  </>
+                  <Loader className="size-3 animate-spin text-muted-foreground" />
                 ) : isPro ? (
-                  <>
-                    <span>&nbsp;&nbsp;</span>
-
-                    <Hint label={"Pro user"}>
-                      <Crown className="inline-block size-3   text-yellow-500" />
-                    </Hint>
-                  </>
+                  <Hint label="Pro user">
+                    <Crown className="size-3 text-amber-500" />
+                  </Hint>
                 ) : null}
-                <span>&nbsp;&nbsp;</span>
+
                 <Hint label={formatFullTime(new Date(createdAt))}>
                   <button className="text-xs text-muted-foreground hover:underline">
                     {format(new Date(createdAt), "h:mm a")}
                   </button>
                 </Hint>
               </div>
+
               <Renderer links={links} value={body} />
               <ThumbNail url={image} />
 
-              {updatedAt ? (
+              {updatedAt && (
                 <span className="text-xs text-muted-foreground">(edited)</span>
-              ) : null}
+              )}
+
               <Reactions data={reactions} onChange={handleReaction} />
               <ThreadBar
                 count={threadCount}
@@ -333,6 +363,7 @@ const Message = ({
             </div>
           )}
         </div>
+
         {!isEditing && (
           <ToolBar
             isAuthor={isAuthor}
@@ -347,6 +378,4 @@ const Message = ({
       </div>
     </>
   );
-};
-
-export default Message;
+}

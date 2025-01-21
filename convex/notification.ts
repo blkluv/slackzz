@@ -50,6 +50,7 @@ export const createMentionNotification = mutation({
     workspaceId: v.id("workspaces"),
     channelId: v.optional(v.id("channels")),
     messageId: v.id("messages"),
+    memberId: v.id("members"),
   },
   handler: async (ctx, args): Promise<Id<"notifications"> | null> => {
     const userId = await auth.getUserId(ctx);
@@ -67,8 +68,11 @@ export const createMentionNotification = mutation({
     );
     if (!currentMember) throw new Error("Mentioning member not found");
 
+    const userBeingMentioned = await ctx.db.get(args.memberId);
+    if (!userBeingMentioned) throw new Error("Mentioned member not found");
+
     return await ctx.db.insert("notifications", {
-      userId: userId,
+      userId: userBeingMentioned.userId,
       type: "info",
       source: "mention",
       title: "A mention!",
@@ -224,5 +228,85 @@ export const getUnreadCount = query({
       .filter((q) => q.eq(q.field("isRead"), false))
       .collect();
     return unreadNotifications.length;
+  },
+});
+export const getWorkspaceNotifications = query({
+  args: {
+    workspaceId: v.id("workspaces"),
+    type: v.optional(
+      v.union(
+        v.literal("info"),
+        v.literal("success"),
+        v.literal("warning"),
+        v.literal("error"),
+        v.literal("system")
+      )
+    ),
+    source: v.optional(
+      v.union(
+        v.literal("mention"),
+        v.literal("subscription"),
+        v.literal("system"),
+        v.literal("workspace"),
+        v.literal("channel"),
+        v.literal("direct_message")
+      )
+    ),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+    unreadOnly: v.optional(v.boolean()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Unauthorized");
+
+    let query = ctx.db
+      .query("notifications")
+      .filter((q) => q.eq(q.field("userId"), userId))
+      .filter((q) => q.eq(q.field("metadata.workspaceId"), args.workspaceId));
+
+    if (args.type) {
+      query = query.filter((q) => q.eq(q.field("type"), args.type));
+    }
+
+    if (args.source) {
+      query = query.filter((q) => q.eq(q.field("source"), args.source));
+    }
+
+    if (args.startDate) {
+      query = query.filter((q) => q.gte(q.field("createdAt"), args.startDate!));
+    }
+
+    if (args.endDate) {
+      query = query.filter((q) => q.lte(q.field("createdAt"), args.endDate!));
+    }
+
+    if (args.unreadOnly) {
+      query = query.filter((q) => q.eq(q.field("isRead"), false));
+    }
+
+    return await query.order("desc").take(args.limit ?? 50);
+  },
+});
+
+export const markNotificationAsReadOnView = mutation({
+  args: {
+    notificationId: v.id("notifications"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Unauthorized");
+
+    const notification = await ctx.db.get(args.notificationId);
+    if (!notification || notification.userId !== userId) {
+      throw new Error("Notification not found or unauthorized");
+    }
+
+    if (!notification.isRead) {
+      await ctx.db.patch(args.notificationId, {
+        isRead: true,
+      });
+    }
   },
 });

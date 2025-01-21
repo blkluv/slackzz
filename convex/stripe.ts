@@ -132,7 +132,6 @@ export const verifySubscription = action({
     await ctx.runMutation(internal.stripe.removeExistingSubscription, {
       userId: session.metadata?.userId as Id<"users">,
     });
-    console.log(subscription);
     await ctx.runMutation(internal.stripe.addSubscriptions, {
       session,
       subscription,

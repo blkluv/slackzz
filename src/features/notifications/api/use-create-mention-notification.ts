@@ -6,6 +6,7 @@ import { Id } from "../../../../convex/_generated/dataModel";
 type RequestType = {
   workspaceId: Id<"workspaces">;
   channelId?: Id<"channels">;
+  memberId: Id<"members">;
   messageId: Id<"messages">;
 };
 type ResponseType = Id<"notifications"> | null;
@@ -40,6 +41,7 @@ export const useCreateMentionNotification = () => {
         const response = await mutation(values);
         options?.onSuccess?.(response);
         setStatus("success");
+
         return response;
       } catch (error) {
         options?.onError?.(error as Error);
