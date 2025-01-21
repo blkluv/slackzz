@@ -4,14 +4,11 @@ import { useCallback, useMemo, useState } from "react";
 import { Id } from "../../../../convex/_generated/dataModel";
 
 type RequestType = {
-  body: string;
-  image?: Id<"_storage">;
   workspaceId: Id<"workspaces">;
   channelId?: Id<"channels">;
-  parentMessagesId?: Id<"messages">;
-  conversationId?: Id<"conversations">;
+  messageId: Id<"messages">;
 };
-type ResponseType = Id<"messages"> | null;
+type ResponseType = Id<"notifications"> | null;
 
 type Options = {
   onSuccess?: (data: ResponseType) => void;
@@ -20,7 +17,7 @@ type Options = {
   throwError?: boolean;
 };
 
-export const useCreateMessage = () => {
+export const useCreateMentionNotification = () => {
   const [data, setData] = useState<ResponseType>(null);
   const [error, setError] = useState<Error | null>(null);
   const [status, setStatus] = useState<
@@ -32,7 +29,7 @@ export const useCreateMessage = () => {
   const isSuccess = useMemo(() => status === "success", [status]);
   const isSettled = useMemo(() => status === "settled", [status]);
 
-  const mutation = useMutation(api.messages.create);
+  const mutation = useMutation(api.notification.createMentionNotification);
   const mutate = useCallback(
     async (values: RequestType, options?: Options) => {
       try {
@@ -43,7 +40,6 @@ export const useCreateMessage = () => {
         const response = await mutation(values);
         options?.onSuccess?.(response);
         setStatus("success");
-        setData(response);
         return response;
       } catch (error) {
         options?.onError?.(error as Error);

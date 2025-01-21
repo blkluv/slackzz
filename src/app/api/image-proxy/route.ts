@@ -1,6 +1,6 @@
 import sharp from "sharp";
 import { NextResponse } from "next/server";
-
+export const dynamic = "force-dynamic";
 // Constants
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const CACHE_DURATION = 60 * 60 * 24; // 24 hours in seconds

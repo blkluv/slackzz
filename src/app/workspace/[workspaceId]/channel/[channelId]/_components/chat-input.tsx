@@ -9,6 +9,8 @@ const Editor = dynamic(() => import("@/components/editor"), { ssr: false });
 import React, { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
+import { useCurrentMember } from "@/features/members/api/use-current-member";
+import { useCreateMentionNotification } from "@/features/notifications/api/use-create-mention-notification";
 
 interface ChatInputProps {
   placeholder: string;
@@ -26,17 +28,21 @@ const ChatInput = ({ placeholder }: ChatInputProps) => {
   const [isPending, setIsPending] = useState(false);
 
   const editorRef = useRef<Quill | null>(null);
-  const { mutate: createMessage } = useCreateMessage();
+  const { mutate: createMessage, data: messageId } = useCreateMessage();
   const { mutate: generateUploadUrl } = useGenerateUploadUrl();
 
   const workspaceId = useWorkSpaceId();
   const channelId = useChannelId();
 
+  const { data: currentMember } = useCurrentMember({ workspaceId });
+
+  const { mutate: createNotification } = useCreateMentionNotification();
+
   const handleSubmit = async ({
     body,
     image,
   }: {
-    body: string; // Quill Delta JSON string
+    body: string;
     image: File | null;
   }) => {
     try {
@@ -44,27 +50,26 @@ const ChatInput = ({ placeholder }: ChatInputProps) => {
       setIsPending(true);
 
       const jsonBody = JSON.parse(body);
+      const userMentionSet: Set<string> = new Set([]);
 
       jsonBody.ops.forEach((op: any) => {
         if (op.insert && op.insert.mention) {
           const mention = op.insert.mention;
-          const { denotationChar, value, id } = mention;
+          const { denotationChar, id } = mention;
 
           if (denotationChar === "@") {
             const currentUrl = window.location.href;
-
             const url = new URL(currentUrl);
-
             url.searchParams.set("profileMemberId", id);
-
             const updatedUrl = url.toString();
 
-            toast.success(`You mentioned @${value}!`);
+            userMentionSet.add(id);
+
             op.attributes = {
               color: "#1d1c1d",
               link: updatedUrl,
             };
-          } else if (denotationChar == "#") {
+          } else if (denotationChar === "#") {
             op.attributes = {
               color: "#1d1c1d",
               link: `/workspace/${workspaceId}/channel/${id}`,
@@ -103,10 +108,28 @@ const ChatInput = ({ placeholder }: ChatInputProps) => {
 
       // Send the message
       createMessage(values, { throwError: true });
+
       setEditorKey((prev) => prev + 1);
+
+      // Handle notifications for mentioned users
+      const arrMentions = Array.from(userMentionSet);
+
+      if (arrMentions.length > 0 && messageId) {
+        const notificationPromises = arrMentions.map((mention) => {
+          if (mention !== currentMember?._id) {
+            return createNotification({
+              messageId: messageId,
+              workspaceId,
+              channelId,
+            });
+          }
+        });
+
+        await Promise.all(notificationPromises);
+      }
     } catch (error) {
       toast.error("Failed to send text");
-      console.log(error);
+      console.error(error);
     } finally {
       setIsPending(false);
       editorRef.current?.enable(true);

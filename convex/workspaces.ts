@@ -33,7 +33,7 @@ export const get = query({
   },
 });
 export const create = mutation({
-  args: { name: v.string(), imageUrl: v.string() },
+  args: { name: v.string(), imageUrl: v.optional(v.string()) },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error("Unauthorized");

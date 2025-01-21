@@ -21,6 +21,7 @@ import type * as conversations from "../conversations.js";
 import type * as http from "../http.js";
 import type * as members from "../members.js";
 import type * as messages from "../messages.js";
+import type * as notification from "../notification.js";
 import type * as reaction from "../reaction.js";
 import type * as status from "../status.js";
 import type * as stripe from "../stripe.js";
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   members: typeof members;
   messages: typeof messages;
+  notification: typeof notification;
   reaction: typeof reaction;
   status: typeof status;
   stripe: typeof stripe;

@@ -15,6 +15,9 @@ import Reactions from "./reactions";
 import { usePanel } from "@/hooks/use-panel";
 import ThreadBar from "./thread-bar";
 import { useGetUserStatus } from "@/features/status/api/use-get-user-status";
+import { UseGetIsProUser } from "@/features/subscription/api/use-get-is-pro-user";
+import { Crown, Loader } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const Renderer = dynamic(() => import("@/components/renderer"), { ssr: false });
 const Editor = dynamic(() => import("@/components/editor"), { ssr: false });
@@ -44,13 +47,24 @@ interface MessageProps {
   threadTimestamp?: number;
   threadName?: string;
   authorId: Id<"users">;
+  currentMemberId?: Id<"members">;
 }
-
+interface QuillOperation {
+  insert?: {
+    mention?: any;
+    [key: string]: any;
+  };
+  attributes?: {
+    link?: string;
+    [key: string]: any;
+  };
+}
 const Message = ({
   id,
   memberId,
   body,
   image,
+  currentMemberId,
   authorName = "Member",
   authorImage,
   isAuthor,
@@ -71,12 +85,38 @@ const Message = ({
     usePanel();
   const [ConfirmDialog, confirm] = useConfirm(
     "Delete message",
-    "Are you sure you want to delete this message? This cannot be undone"
+    "Are you sure you want to delete this message? This cannot be undone."
   );
   const { data: userStatus } = useGetUserStatus({ id: authorId });
+  const { data: isPro, isLoading: isLoadingPro } = UseGetIsProUser({
+    userId: authorId,
+  });
+  const [isMentioned, setIsMentioned] = useState<boolean>(false);
+  const [links, setLinks] = useState<string[]>([]);
+
+  useEffect(() => {
+    const jsonBody = JSON.parse(body);
+    const uniqueLinks = new Set<string>();
+    let flagMentioned = false;
+    jsonBody.ops.forEach((op: QuillOperation) => {
+      if (op.insert && !op.insert.mention && op.attributes?.link) {
+        uniqueLinks.add(op.attributes.link);
+      } else if (
+        currentMemberId &&
+        op.insert?.mention?.id === currentMemberId
+      ) {
+        flagMentioned = true;
+      }
+    });
+    setIsMentioned(flagMentioned);
+
+    setLinks(Array.from(uniqueLinks));
+  }, [body, currentMemberId]);
+
   const formatFullTime = (date: Date) => {
     return `${isToday(date) ? "Today" : isYesterday(date) ? "Yesterday" : format(date, "MMM d, yyyy")} at ${format(date, "h:mm:ss a")}`;
   };
+
   const fallback = authorName.charAt(0).toUpperCase();
 
   const { mutate: updateMessage, isPending: isUpdatingMessage } =
@@ -92,29 +132,23 @@ const Message = ({
     reactMessage(
       { messageId: id, value },
       {
-        onError: () => {
-          toast.error("Failed to toggle reaction");
-        },
+        onError: () => toast.error("Failed to toggle reaction."),
       }
     );
   };
 
   const handleDeleteMessage = async () => {
     const ok = await confirm();
-
     if (!ok) return;
+
     removeMessage(
       { id },
       {
         onSuccess: () => {
-          toast.success("Message deleted");
-          if (parentMessageId === id) {
-            onCloseMessage();
-          }
+          toast.success("Message deleted.");
+          if (parentMessageId === id) onCloseMessage();
         },
-        onError: () => {
-          toast.success("Message Delete failed");
-        },
+        onError: () => toast.error("Message deletion failed."),
       }
     );
   };
@@ -124,12 +158,10 @@ const Message = ({
       { body, id },
       {
         onSuccess: () => {
-          toast.success("Message updated");
+          toast.success("Message updated.");
           setEditingId(null);
         },
-        onError: () => {
-          toast.success("Message Update failed");
-        },
+        onError: () => toast.error("Message update failed."),
       }
     );
   };
@@ -140,8 +172,11 @@ const Message = ({
         <ConfirmDialog />
         <div
           className={cn(
-            "flex flex-col gap-2 p-1.5 px-5 hover:bg-red-100/60 group relative",
+            "flex flex-col gap-2 p-1.5 px-5 hover:bg-red-100/60 group relative ",
             isEditing && "bg-[#f2c74433] hover:bg-[#f2c74433]/80",
+            isMentioned && "bg-yellow-500/25 hover:bg-yellow-500/15",
+            isMentioned && "bg-yellow-500/25 hover:bg-yellow-500/15",
+
             isRemovingMessage &&
               "bg-rose-500/50 transform transition-all scale-y-0 origin-bottom duration-200"
           )}
@@ -166,7 +201,7 @@ const Message = ({
               </div>
             ) : (
               <div className="flex flex-col w-full ">
-                <Renderer value={body} />
+                <Renderer links={links} value={body} />
                 <ThumbNail url={image} />
                 {updatedAt ? (
                   <span className="text-xs text-muted-foreground">
@@ -210,6 +245,8 @@ const Message = ({
         className={cn(
           "flex flex-col gap-2 p-1.5 px-5 hover:bg-red-100/60 group relative",
           isEditing && "bg-[#f2c74433] hover:bg-[#f2c74433]/80",
+          isMentioned && "bg-yellow-500/25 hover:bg-yellow-500/15",
+
           isRemovingMessage &&
             "bg-rose-500/50 transform transition-all scale-y-0 origin-bottom duration-200"
         )}
@@ -256,6 +293,22 @@ const Message = ({
                 >
                   {authorName}
                 </button>
+
+                {isLoadingPro ? (
+                  <>
+                    <span>&nbsp;&nbsp;&nbsp;</span>
+
+                    <Loader className=" inline-block size-3  animate-spin text-muted-foreground" />
+                  </>
+                ) : isPro ? (
+                  <>
+                    <span>&nbsp;&nbsp;</span>
+
+                    <Hint label={"Pro user"}>
+                      <Crown className="inline-block size-3   text-yellow-500" />
+                    </Hint>
+                  </>
+                ) : null}
                 <span>&nbsp;&nbsp;</span>
                 <Hint label={formatFullTime(new Date(createdAt))}>
                   <button className="text-xs text-muted-foreground hover:underline">
@@ -263,7 +316,7 @@ const Message = ({
                   </button>
                 </Hint>
               </div>
-              <Renderer value={body} />
+              <Renderer links={links} value={body} />
               <ThumbNail url={image} />
 
               {updatedAt ? (

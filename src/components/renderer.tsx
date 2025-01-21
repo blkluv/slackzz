@@ -1,66 +1,69 @@
 import Quill from "quill";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import "quill-mention/autoregister";
 import MagicUrl from "quill-magic-url";
 import LinkPreview from "./link-previewer";
 import { useSearchParams } from "next/navigation";
 
 Quill.register("modules/magicUrl", MagicUrl);
+
 interface RendererProps {
   value: string;
+  links: string[];
 }
 
-const Renderer = ({ value }: RendererProps) => {
+const Renderer = ({ value, links }: RendererProps) => {
   const [isEmpty, setIsEmpty] = useState(false);
   const rendererRef = useRef<HTMLDivElement>(null);
   const params = useSearchParams();
 
-  const [links, setLinks] = useState<string[]>([]);
-  useEffect(() => {
-    if (!rendererRef.current) return;
-    const jsonValue = JSON.parse(value);
-    const container = rendererRef.current;
-
-    const quill = new Quill(document.createElement("div"), {
+  // Memoize Quill instance creation
+  const quill = useMemo(() => {
+    const quillInstance = new Quill(document.createElement("div"), {
       theme: "snow",
     });
+    quillInstance.enable(false);
+    return quillInstance;
+  }, []);
 
-    quill.enable(false);
+  useEffect(() => {
+    if (!rendererRef.current) return;
 
-    const contents = JSON.parse(value);
-    quill.setContents(contents);
+    try {
+      const jsonValue = JSON.parse(value);
+      const container = rendererRef.current;
 
-    const isEmpty =
-      quill
+      quill.setContents(jsonValue);
+      const cleanText = quill
         .getText()
         .replace(/<(.|\n)*?>/g, "")
-        .trim().length == 0;
-    setIsEmpty(isEmpty);
+        .trim();
+      setIsEmpty(cleanText.length === 0);
 
-    container.innerHTML = quill.root.innerHTML;
-    const newLinks: string[] = [];
-    jsonValue.ops.forEach((op) => {
-      if (op.insert && !op.insert?.mention && op.attributes?.link) {
-        newLinks.push(op.attributes.link);
-      }
-    });
-    setLinks(newLinks);
+      container.innerHTML = quill.root.innerHTML;
 
-    return () => {
-      if (container) container.innerHTML = "";
-    };
-  }, [value]);
+      // Cleanup function
+      return () => {
+        container.innerHTML = "";
+      };
+    } catch (error) {
+      console.error("Error parsing Quill content:", error);
+      setIsEmpty(true);
+    }
+  }, [value, quill]);
+
   if (isEmpty) return null;
+
   return (
     <>
       <div ref={rendererRef} className="ql-editor ql-renderer" />
-      {links.length > 0 && !params.has("parentMessageId") ? (
-        <article className="my-4 flex flex-col   gap-2 ">
-          {links.map((link, index) => {
-            return <LinkPreview url={link} key={link + index} />;
-          })}
+      {links.length > 0 && !params.has("parentMessageId") && (
+        <article className="my-4 flex flex-col gap-2">
+          {links.map((link, index) => (
+            <LinkPreview url={link} key={`${link}-${index}`} />
+          ))}
         </article>
-      ) : null}
+      )}
     </>
   );
 };

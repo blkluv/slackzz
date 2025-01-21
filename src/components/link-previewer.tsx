@@ -195,10 +195,10 @@ export default function LinkPreview({
           <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
           <div className="space-y-0.5">
             <p className="font-medium text-destructive text-sm">
-              Failed to load preview
+              Invalid url <span className="truncate">( {url} )</span>
             </p>
             <p className="text-xs text-destructive/80">
-              {error?.message || "Unable to fetch link preview"}
+              Be cautious when interact with this link
             </p>
           </div>
         </CardContent>

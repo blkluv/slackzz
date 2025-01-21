@@ -6,28 +6,32 @@ import React, {
   useState,
 } from "react";
 import Quill, { QuillOptions } from "quill";
+import { Delta, Op } from "quill/core";
+import { usePathname } from "next/navigation";
+import Image from "next/image";
 import "quill/dist/quill.snow.css";
+import "quill-mention/autoregister";
+import MagicUrl from "quill-magic-url";
+
 import { Button } from "./ui/button";
 import { PiTextAa } from "react-icons/pi";
 import { ImageIcon, Smile, XIcon } from "lucide-react";
 import { MdSend } from "react-icons/md";
 import Hint from "./hint";
-import { Delta, Op } from "quill/core";
-import { cn } from "@/lib/utils";
 import EmojiPopover from "./emoji-popover";
-import Image from "next/image";
-import "quill-mention/autoregister";
-import MagicUrl from "quill-magic-url";
-import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 import { useGetSuggestions } from "@/features/suggestion/api/use-get-suggestion";
 import { useWorkSpaceId } from "@/hooks/use-workspace-id";
 import { Id } from "../../convex/_generated/dataModel";
+import { UseGetIsProUser } from "@/features/subscription/api/use-get-is-pro-user";
 
 Quill.register("modules/magicUrl", MagicUrl);
+
 type EditorValue = {
   image: File | null;
   body: string;
 };
+
 type SuggestionValue = {
   id: Id<"members"> | Id<"channels">;
   value?: string;
@@ -53,11 +57,18 @@ const Editor = ({
   onCancel,
 }: EditorProps) => {
   const [text, setText] = useState("");
-  const pathName = usePathname();
-  const isDMs = pathName.includes("member");
   const [image, setImage] = useState<File | null>(null);
   const [isToolbarVisible, setIsToolbarVisible] = useState(true);
+
+  const pathName = usePathname();
+  const isDMs = pathName.includes("member");
   const workspaceId = useWorkSpaceId();
+  const { data, isLoading } = useGetSuggestions({
+    isNeedUser: !isDMs,
+    workspaceId,
+  });
+  const { data: isPro } = UseGetIsProUser({});
+
   const containerRef = useRef<HTMLDivElement>(null);
   const submitRef = useRef(onSubmit);
   const placeHolderRef = useRef(placeHolder);
@@ -65,10 +76,6 @@ const Editor = ({
   const defaultValueRef = useRef(defaultValue);
   const disabledRef = useRef(disabled);
   const imageElementRef = useRef<HTMLInputElement>(null);
-  const { data, isLoading } = useGetSuggestions({
-    isNeedUser: !isDMs,
-    workspaceId,
-  });
   const channelsRef = useRef<null | SuggestionValue[]>(null);
   const workspaceMembersRef = useRef<null | SuggestionValue[]>(null);
 
@@ -95,6 +102,7 @@ const Editor = ({
     const editorContainer = container.appendChild(
       container.ownerDocument.createElement("div")
     );
+
     const options: QuillOptions = {
       theme: "snow",
       placeholder: placeHolderRef.current,
@@ -108,34 +116,109 @@ const Editor = ({
             renderList: (values: SuggestionValue[], searchTerm: string) => void,
             mentionChar: string
           ) {
-            let values;
+            const values =
+              mentionChar === "#"
+                ? channelsRef.current
+                : workspaceMembersRef.current;
 
-            if (mentionChar === "#") {
-              values = channelsRef.current;
-            } else {
-              values = workspaceMembersRef.current;
-            }
-            if (!values) {
-              return;
-            }
+            if (!values) return;
+
             if (searchTerm.length === 0) {
               renderList(values, searchTerm);
             } else {
-              const matches = [];
-              for (let i = 0; i < values.length; i++)
-                if (
-                  ~values[i].value
-                    .toLowerCase()
-                    .indexOf(searchTerm.toLowerCase())
-                )
-                  matches.push(values[i]);
+              const matches = values.filter((value) =>
+                value.value?.toLowerCase().includes(searchTerm.toLowerCase())
+              );
               renderList(matches, searchTerm);
             }
           },
         },
         toolbar: [
           ["bold", "italic", "strike"],
+
           [{ list: "ordered" }, { list: "bullet" }],
+          isPro && [
+            {
+              color: [
+                false, // this represents the 'remove color' option
+                "#000000",
+                "#e60000",
+                "#ff9900",
+                "#ffff00",
+                "#008a00",
+                "#0066cc",
+                "#9933ff",
+                "#ffffff",
+                "#facccc",
+                "#ffebcc",
+                "#ffffcc",
+                "#cce8cc",
+                "#cce0f5",
+                "#ebd6ff",
+                "#bbbbbb",
+                "#f06666",
+                "#ffc266",
+                "#ffff66",
+                "#66b966",
+                "#66a3e0",
+                "#c285ff",
+                "#888888",
+                "#a10000",
+                "#b26b00",
+                "#b2b200",
+                "#006100",
+                "#0047b2",
+                "#6b24b2",
+                "#444444",
+                "#5c0000",
+                "#663d00",
+                "#666600",
+                "#003700",
+                "#002966",
+                "#3d1466",
+              ],
+            },
+            {
+              background: [
+                false, // remove background option
+                "#000000",
+                "#e60000",
+                "#ff9900",
+                "#ffff00",
+                "#008a00",
+                "#0066cc",
+                "#9933ff",
+                "#ffffff",
+                "#facccc",
+                "#ffebcc",
+                "#ffffcc",
+                "#cce8cc",
+                "#cce0f5",
+                "#ebd6ff",
+                "#bbbbbb",
+                "#f06666",
+                "#ffc266",
+                "#ffff66",
+                "#66b966",
+                "#66a3e0",
+                "#c285ff",
+                "#888888",
+                "#a10000",
+                "#b26b00",
+                "#b2b200",
+                "#006100",
+                "#0047b2",
+                "#6b24b2",
+                "#444444",
+                "#5c0000",
+                "#663d00",
+                "#666600",
+                "#003700",
+                "#002966",
+                "#3d1466",
+              ],
+            },
+          ],
         ],
         keyboard: {
           bindings: {
@@ -144,14 +227,13 @@ const Editor = ({
               handler: () => {
                 const text = quill.getText();
                 const addedImage = imageElementRef.current?.files?.[0] || null;
-
                 const isEmpty =
                   !addedImage &&
-                  text.replace(/<(.|\n)*?>/g, "").trim().length == 0;
+                  text.replace(/<(.|\n)*?>/g, "").trim().length === 0;
+
                 if (isEmpty) return;
 
                 const body = JSON.stringify(quill.getContents());
-
                 submitRef.current?.({ body, image: addedImage });
               },
             },
@@ -181,12 +263,11 @@ const Editor = ({
       if (quillRef.current) quillRef.current = null;
       if (innerRef) innerRef.current = null;
     };
-  }, [innerRef, channelsRef, workspaceMembersRef]);
+  }, [innerRef, channelsRef, workspaceMembersRef, isPro]);
 
   const toggleToolbar = () => {
     setIsToolbarVisible((cur) => !cur);
     const toolbarElement = containerRef.current?.querySelector(".ql-toolbar");
-
     if (toolbarElement) {
       toolbarElement.classList.toggle("hidden");
     }
@@ -197,10 +278,24 @@ const Editor = ({
     quill?.insertText(quill?.getSelection()?.index || 0, emojiValue);
   };
 
-  const isEmpty = !image && text.replace(/<(.|\n)*?>/g, "").trim().length == 0;
+  const handleSubmit = () => {
+    onSubmit({
+      body: JSON.stringify(quillRef?.current?.getContents()),
+      image,
+    });
+  };
+
+  const handleImageRemove = () => {
+    setImage(null);
+    if (imageElementRef.current) {
+      imageElementRef.current.value = "";
+    }
+  };
+
+  const isEmpty = !image && text.replace(/<(.|\n)*?>/g, "").trim().length === 0;
 
   return (
-    <div className="flex flex-col ">
+    <div className="flex flex-col">
       <input
         type="file"
         accept="image/*"
@@ -208,6 +303,7 @@ const Editor = ({
         onChange={(e) => setImage(e.target.files![0])}
         className="hidden"
       />
+
       <div
         className={cn(
           "flex flex-col border border-slate-200 rounded-md focus-within:border-slate-300 focus-within:shadow-sm transition bg-white",
@@ -215,16 +311,14 @@ const Editor = ({
         )}
       >
         <div ref={containerRef} className="h-full ql-custom" />
-        {!!image && (
+
+        {image && (
           <div className="p-2">
             <div className="relative size-[62px] flex items-center justify-center group/image">
               <Hint label="Remove image">
                 <button
                   disabled={disabled}
-                  onClick={() => {
-                    setImage(null);
-                    imageElementRef.current!.value = "";
-                  }}
+                  onClick={handleImageRemove}
                   className="hidden group-hover/image:flex rounded-full bg-black/70 hover:bg-black absolute -top-2.5 -right-2.5 text-white size-6 z-[4] border-2 border-white justify-center items-center"
                 >
                   <XIcon className="size-3.5" />
@@ -239,14 +333,15 @@ const Editor = ({
             </div>
           </div>
         )}
-        <div className="flex px-2 pb-2 ">
+
+        <div className="flex px-2 pb-2">
           <Hint
             label={isToolbarVisible ? "Hide Formatting" : "Show Formatting"}
           >
             <Button
               disabled={disabled}
-              size={"iconSm"}
-              variant={"ghost"}
+              size="iconSm"
+              variant="ghost"
               onClick={toggleToolbar}
             >
               <PiTextAa className="size-4" />
@@ -254,73 +349,65 @@ const Editor = ({
           </Hint>
 
           <EmojiPopover onEmojiSelect={onEmojiSelect}>
-            <Button disabled={disabled} size={"iconSm"} variant={"ghost"}>
+            <Button disabled={disabled} size="iconSm" variant="ghost">
               <Smile className="size-4" />
             </Button>
           </EmojiPopover>
+
           {variant === "create" && (
             <Hint label="Image">
               <Button
                 disabled={disabled}
-                size={"iconSm"}
-                variant={"ghost"}
+                size="iconSm"
+                variant="ghost"
                 onClick={() => imageElementRef.current?.click()}
               >
                 <ImageIcon className="size-4" />
               </Button>
             </Hint>
           )}
-          {variant === "update" && (
+
+          {variant === "update" ? (
             <div className="ml-auto flex items-center gap-x-2">
               <Button
-                size={"sm"}
-                variant={"outline"}
+                size="sm"
+                variant="outline"
                 onClick={onCancel}
                 disabled={disabled}
               >
                 Cancel
               </Button>
               <Button
-                size={"sm"}
+                size="sm"
                 disabled={disabled || isEmpty}
-                onClick={() =>
-                  onSubmit({
-                    body: JSON.stringify(quillRef?.current?.getContents()),
-                    image,
-                  })
-                }
-                className="  bg-[#007a5a] hover:bg-[#007a5a]/80 text-white"
+                onClick={handleSubmit}
+                className="bg-[#007a5a] hover:bg-[#007a5a]/80 text-white"
               >
                 Save
               </Button>
             </div>
-          )}
-          {variant === "create" && (
+          ) : (
             <Button
               className={cn(
-                " ml-auto",
+                "ml-auto",
                 isEmpty
-                  ? " bg-[#white] hover:bg-[#white]/80 text-muted-foreground"
-                  : " bg-[#007a5a] hover:bg-[#007a5a]/80 text-white"
+                  ? "bg-[#white] hover:bg-[#white]/80 text-muted-foreground"
+                  : "bg-[#007a5a] hover:bg-[#007a5a]/80 text-white"
               )}
-              size={"iconSm"}
+              size="iconSm"
               disabled={disabled || isEmpty}
-              onClick={() =>
-                onSubmit({
-                  body: JSON.stringify(quillRef?.current?.getContents()),
-                  image,
-                })
-              }
+              onClick={handleSubmit}
             >
               <MdSend className="size-4" />
             </Button>
           )}
         </div>
       </div>
+
       {variant === "create" && (
         <div
           className={cn(
-            " opacity-0 p-2 text-[10px] transition-opacity text-muted-foreground flex justify-end",
+            "opacity-0 p-2 text-[10px] transition-opacity text-muted-foreground flex justify-end",
             !isEmpty && "opacity-100"
           )}
         >

@@ -171,13 +171,16 @@ export const addSubscriptions = internalMutation({
 });
 
 export const isSubscribed = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { userId: v.optional(v.id("users")) },
+  handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return false;
 
-    const userId = await auth.getUserId(ctx);
+    let userId = await auth.getUserId(ctx);
     if (!userId) return false;
+    if (args.userId) {
+      userId = args.userId;
+    }
 
     const subscription = await ctx.db
       .query("subscriptions")

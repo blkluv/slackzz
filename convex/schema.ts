@@ -4,23 +4,6 @@ import { v } from "convex/values";
 
 const schema = defineSchema({
   ...authTables,
-  notifications: defineTable({
-    userId: v.id("users"),
-    type: v.union(
-      v.literal("info"),
-      v.literal("success"),
-      v.literal("warning"),
-      v.literal("error"),
-      v.literal("system")
-    ),
-    title: v.string(),
-    message: v.string(),
-    metadata: v.optional(v.object({})),
-    isRead: v.boolean(),
-    createdAt: v.number(),
-  })
-    .index("by_user_id", ["userId"])
-    .index("by_user_id_type", ["userId", "type"]),
 
   usersStatus: defineTable({
     userId: v.id("users"),
@@ -100,6 +83,44 @@ const schema = defineSchema({
     .index("by_workspace_id", ["workspaceId"])
     .index("by_member_id", ["memberId"])
     .index("by_message_id", ["messageId"]),
+
+  notifications: defineTable({
+    userId: v.id("users"),
+    type: v.union(
+      v.literal("info"),
+      v.literal("success"),
+      v.literal("warning"),
+      v.literal("error"),
+      v.literal("system")
+    ),
+    title: v.string(),
+    message: v.string(),
+    source: v.union(
+      v.literal("mention"),
+      v.literal("subscription"),
+      v.literal("system"),
+      v.literal("workspace"),
+      v.literal("channel"),
+      v.literal("direct_message")
+    ),
+    metadata: v.optional(
+      v.object({
+        workspaceId: v.optional(v.id("workspaces")),
+        channelId: v.optional(v.id("channels")),
+        messageId: v.optional(v.id("messages")),
+        mentionedBy: v.optional(v.id("members")),
+        subscriptionId: v.optional(v.string()),
+        url: v.optional(v.string()),
+      })
+    ),
+    isRead: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_user_id", ["userId"])
+    .index("by_user_id_type", ["userId", "type"])
+    .index("by_user_id_source", ["userId", "source"])
+    .index("by_user_id_read", ["userId", "isRead"])
+    .index("by_creation_date", ["createdAt"]),
 });
 
 export default schema;

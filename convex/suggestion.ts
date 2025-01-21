@@ -35,10 +35,11 @@ export const get = query({
         const user = await populateUser(ctx, memberData.userId);
 
         if (user) {
-          newMembers.push({
-            id: memberData._id,
-            value: user.name,
-          });
+          if (user._id != userId)
+            newMembers.push({
+              id: memberData._id,
+              value: user.name,
+            });
         }
       }
       result.push(newMembers);
