@@ -53,3 +53,15 @@ export const sortThreads = (
     return sortOrder === "asc" ? comparison : -comparison;
   });
 };
+export const getPristineUrl = (url: string): string => {
+  try {
+    const urlObject = new URL(url, window.location.origin);
+    urlObject.search = "";
+    urlObject.hash = "";
+
+    const pristineUrl = `${window.location.origin}${urlObject.pathname}`;
+    return pristineUrl;
+  } catch {
+    return url;
+  }
+};

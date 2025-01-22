@@ -30,6 +30,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useWorkSpaceId } from "@/hooks/use-workspace-id";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
+import { getPristineUrl } from "@/lib/utils";
 
 type NotificationType = "info" | "success" | "warning" | "error" | "system";
 type NotificationSource =
@@ -197,47 +198,53 @@ export default function NotificationsPage() {
       </div>
 
       <div className="space-y-4 max-h-[90vh] message-scrollbar overflow-y-scroll pb-20  ">
-        {notifications?.map((notification) => (
-          <div
-            key={notification._id}
-            data-notification-id={notification._id}
-            className={`notification-item p-4 rounded-lg border transition-colors ${
-              notification.isRead ? "bg-gray-50" : "bg-white"
-            }`}
-          >
-            <div className="flex items-start gap-4">
-              <div className="mt-1 flex flex-col items-center gap-2">
-                {getNotificationIcon(notification.type)}
-                {notification.isRead ? (
-                  <CheckCircle className="h-3 w-3 text-gray-400" />
-                ) : (
-                  <Circle className="h-3 w-3 text-blue-500 fill-blue-500" />
-                )}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">{notification.title}</h3>
-                  <span className="text-sm text-gray-500">
-                    {format(notification.createdAt, "PP p")}
-                  </span>
+        {notifications?.map((notification) => {
+          const url =
+            getPristineUrl(notification.metadata?.url) +
+            `#${notification.metadata?.messageId}`;
+          return (
+            <div
+              key={notification._id}
+              data-notification-id={notification._id}
+              className={`notification-item p-4 rounded-lg border transition-colors ${
+                notification.isRead ? "bg-gray-50" : "bg-white"
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                <div className="mt-1 flex flex-col items-center gap-2">
+                  {getNotificationIcon(notification.type)}
+                  {notification.isRead ? (
+                    <CheckCircle className="h-3 w-3 text-gray-400" />
+                  ) : (
+                    <Circle className="h-3 w-3 text-blue-500 fill-blue-500" />
+                  )}
                 </div>
-                <p className="text-gray-600 mt-1">{notification.message}</p>
-                {notification.metadata?.url && (
-                  <a
-                    href={notification.metadata.url}
-                    className="text-blue-500 hover:text-blue-600 text-sm mt-2 inline-block"
-                  >
-                    View details
-                  </a>
-                )}
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">{notification.title}</h3>
+                    <span className="text-sm text-gray-500">
+                      {format(notification.createdAt, "PP p")}
+                    </span>
+                  </div>
+                  <p className="text-gray-600 mt-1">{notification.message}</p>
+                  {notification.metadata?.url &&
+                  notification.metadata?.messageId ? (
+                    <a
+                      href={url}
+                      className="text-blue-500 hover:text-blue-600 text-sm mt-2 inline-block"
+                    >
+                      View details
+                    </a>
+                  ) : null}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {notifications?.length === 0 && (
           <div className="text-center py-12 text-gray-500">
-            No notifications found
+            No activities found
           </div>
         )}
       </div>

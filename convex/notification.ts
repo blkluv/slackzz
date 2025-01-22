@@ -219,14 +219,20 @@ export const deleteNotification = mutation({
 // Get unread count
 export const getUnreadCount = query({
   args: {
-    userId: v.id("users"),
+    workspaceId: v.id("workspaces"),
   },
+
   handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Unauthorized");
+
     const unreadNotifications = await ctx.db
       .query("notifications")
-      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .filter((q) => q.eq(q.field("userId"), userId))
       .filter((q) => q.eq(q.field("isRead"), false))
+      .filter((q) => q.eq(q.field("metadata.workspaceId"), args.workspaceId))
       .collect();
+
     return unreadNotifications.length;
   },
 });

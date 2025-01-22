@@ -86,7 +86,7 @@ const WorkspaceSideBar = () => {
         isAdmin={member.role === "admin"}
         workspace={workspace}
       />
-      <div className="flex flex-col px-2 mt-3">
+      <div className="flex flex-col gap-[0.15rem] px-2 mt-3">
         <SidebarItem
           variant={getItemVariant("thread")}
           label="Threads"

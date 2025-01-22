@@ -96,7 +96,9 @@ function Toolbar() {
       </div>
       <div className="ml-auto flex-1 flex items-center justify-end">
         <Button variant={"transparent"} size={"iconSm"}>
-          <Info className="size-5 text-white" />
+          <Link href="/support">
+            <Info className="size-5 text-white" />
+          </Link>
         </Button>
       </div>
     </nav>

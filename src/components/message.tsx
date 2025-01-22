@@ -250,7 +250,7 @@ export default function Message({
               </div>
             ) : (
               <div className="flex flex-col w-full">
-                <Renderer links={links} value={body} />
+                <Renderer links={links} value={body} messageId={id} />
                 <ThumbNail url={image} />
                 {updatedAt && (
                   <span className="text-xs text-muted-foreground">
@@ -345,7 +345,7 @@ export default function Message({
                 </Hint>
               </div>
 
-              <Renderer links={links} value={body} />
+              <Renderer links={links} value={body} messageId={id} />
               <ThumbNail url={image} />
 
               {updatedAt && (

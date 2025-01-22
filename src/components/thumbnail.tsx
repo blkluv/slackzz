@@ -1,37 +1,24 @@
 import Image from "next/image";
-import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
+import Zoom from "react-medium-image-zoom";
+import "react-medium-image-zoom/dist/styles.css";
 
 const ThumbNail = ({ url }: { url: string | null | undefined }) => {
   if (!url) return null;
 
   return (
-    <Dialog>
-      <DialogTrigger>
-        <div className="relative overflow-hidden min-w-[360px] border rounded-lg my-2 cursor-zoom-in">
-          <Image
-            src={url}
-            alt="Message Image"
-            width={500}
-            height={500}
-            sizes="(max-width: 768px) 100vw, 500px"
-            className="rounded-md object-cover"
-            loading="lazy"
-          />
-        </div>
-      </DialogTrigger>
-
-      <DialogContent className="max-w-[800px] border-none bg-transparent p-0 shadow-none">
+    <article className=" relative overflow-hidden  border rounded-lg my-2 w-fit cursor-zoom-in ">
+      <Zoom>
         <Image
           src={url}
           alt="Message Image"
-          width={1000}
-          height={1000}
-          sizes="(max-width: 768px) 100vw, 1000px" // Adjusted for large screens
+          width={500}
+          height={500}
+          sizes="(max-width: 768px) 100vw, 500px"
           className="rounded-md object-cover"
-          loading="eager" // Preload image for dialog view to reduce perceived latency
+          loading="lazy"
         />
-      </DialogContent>
-    </Dialog>
+      </Zoom>
+    </article>
   );
 };
 

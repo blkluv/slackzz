@@ -4,15 +4,17 @@ import "quill-mention/autoregister";
 import MagicUrl from "quill-magic-url";
 import LinkPreview from "./link-previewer";
 import { useSearchParams } from "next/navigation";
+import { Id } from "../../convex/_generated/dataModel";
 
 Quill.register("modules/magicUrl", MagicUrl);
 
 interface RendererProps {
   value: string;
   links: string[];
+  messageId?: Id<"messages">;
 }
 
-const Renderer = ({ value, links }: RendererProps) => {
+const Renderer = ({ value, links, messageId = undefined }: RendererProps) => {
   const [isEmpty, setIsEmpty] = useState(false);
   const rendererRef = useRef<HTMLDivElement>(null);
   const params = useSearchParams();
@@ -54,7 +56,7 @@ const Renderer = ({ value, links }: RendererProps) => {
 
   return (
     <>
-      <div ref={rendererRef} className="ql-editor ql-renderer" />
+      <div ref={rendererRef} className="ql-editor ql-renderer" id={messageId} />
       {links?.length > 0 && !params.has("parentMessageId") && (
         <article className="my-4 flex flex-col gap-2">
           {links.map((link, index) => (
