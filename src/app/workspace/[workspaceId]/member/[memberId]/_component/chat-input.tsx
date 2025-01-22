@@ -90,6 +90,7 @@ const ChatInput = ({ placeholder, conversationId }: ChatInputProps) => {
     } finally {
       setIsPending(false);
       editorRef.current?.enable(true);
+      editorRef.current?.focus();
     }
   };
   return (

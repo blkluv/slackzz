@@ -158,6 +158,7 @@ const ChatInput = ({ placeholder }: ChatInputProps) => {
       } finally {
         setLocalPending(false);
         editorRef.current?.enable(true);
+        editorRef.current?.focus();
       }
     },
     [

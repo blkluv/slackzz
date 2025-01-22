@@ -36,6 +36,8 @@ const PreferencesModal = ({
   const [value, setValue] = useState(initialValue);
   const [editOpen, setEditOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [isDeletingWorkspace, setIsDeletingWorkspace] =
+    useState<boolean>(false);
 
   const [ConfirmDialog, confirm] = useConfirm(
     "Are you sure?",
@@ -86,6 +88,7 @@ const PreferencesModal = ({
   const handleRemove = async () => {
     const ok = await confirm();
     if (!ok) return;
+    setIsDeletingWorkspace(true);
 
     if (value.imageUrl) {
       const fileKey = value.imageUrl?.split("/").pop();
@@ -122,6 +125,7 @@ const PreferencesModal = ({
         },
       }
     );
+    setIsDeletingWorkspace(true);
   };
 
   const handleEdit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -187,6 +191,7 @@ const PreferencesModal = ({
                   {value.imageUrl ? (
                     <div key={value.imageUrl} className="relative group">
                       <button
+                        type="button"
                         onClick={() => deleteImage(value.imageUrl!)}
                         disabled={isDeleting}
                         className={cn(
@@ -249,9 +254,9 @@ const PreferencesModal = ({
             </Dialog>
 
             <button
-              disabled={false}
+              disabled={isDeletingWorkspace}
               onClick={handleRemove}
-              className="flex items-center gap-x-2 px-5 py-4 bg-white rounded-lg border cursor-pointer hover:bg-gray-50 text-rose-600"
+              className={` flex items-center gap-x-2 px-5 py-4 bg-white rounded-lg border cursor-pointer hover:bg-gray-50 text-rose-600 ${isDeletingWorkspace && "  hover:cursor-not-allowed "}`}
             >
               <TrashIcon className="size-4" />
               <p className="text-sm font-semibold">Delete workspace</p>

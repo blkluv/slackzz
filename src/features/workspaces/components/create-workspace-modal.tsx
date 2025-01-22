@@ -65,6 +65,7 @@ const CreateWorkspaceModal = () => {
         onSuccess(id) {
           toast.success("Workspace created");
           router.push(`/workspace/${id}`);
+          setImage(undefined);
           handleClose();
         },
       }
@@ -96,6 +97,7 @@ const CreateWorkspaceModal = () => {
           {image ? (
             <div key={image} className="relative group">
               <button
+                type="button"
                 onClick={() => deleteImage()}
                 disabled={isDeleting}
                 className={cn(

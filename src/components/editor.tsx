@@ -396,7 +396,10 @@ const Editor = ({
               )}
               size="iconSm"
               disabled={disabled || isEmpty}
-              onClick={handleSubmit}
+              onClick={() => {
+                handleSubmit();
+                quillRef.current?.focus();
+              }}
             >
               <MdSend className="size-4" />
             </Button>
