@@ -44,7 +44,6 @@ export const createNotification = mutation({
   },
 });
 
-// Helper function for creating mention notifications
 export const createMentionNotification = mutation({
   args: {
     workspaceId: v.id("workspaces"),
@@ -92,7 +91,6 @@ export const createMentionNotification = mutation({
   },
 });
 
-// Subscription notification helper
 export const createSubscriptionNotification = mutation({
   args: {
     userId: v.id("users"),
@@ -121,78 +119,16 @@ export const createSubscriptionNotification = mutation({
   },
 });
 
-// Query to get user notifications
-export const getUserNotifications = query({
-  args: {
-    userId: v.id("users"),
-    type: v.optional(
-      v.union(
-        v.literal("info"),
-        v.literal("success"),
-        v.literal("warning"),
-        v.literal("error"),
-        v.literal("system")
-      )
-    ),
-    source: v.optional(
-      v.union(
-        v.literal("mention"),
-        v.literal("subscription"),
-        v.literal("system"),
-        v.literal("workspace"),
-        v.literal("channel"),
-        v.literal("direct_message")
-      )
-    ),
-    unreadOnly: v.optional(v.boolean()),
-    limit: v.optional(v.number()),
-  },
-  handler: async (ctx, args) => {
-    let query = ctx.db
-      .query("notifications")
-      .filter((q) => q.eq(q.field("userId"), args.userId));
-
-    if (args.type) {
-      query = query.filter((q) => q.eq(q.field("type"), args.type));
-    }
-
-    if (args.source) {
-      query = query.filter((q) => q.eq(q.field("source"), args.source));
-    }
-
-    if (args.unreadOnly) {
-      query = query.filter((q) => q.eq(q.field("isRead"), false));
-    }
-
-    return await query.order("desc").take(args.limit ?? 50);
-  },
-});
-
-// Mark notifications as read
-export const markNotificationsAsRead = mutation({
-  args: {
-    notificationIds: v.array(v.id("notifications")),
-  },
-  handler: async (ctx, args) => {
-    await Promise.all(
-      args.notificationIds.map((id) =>
-        ctx.db.patch(id, {
-          isRead: true,
-        })
-      )
-    );
-  },
-});
-
-// Mark all notifications as read
 export const markAllNotificationsAsRead = mutation({
-  args: {
-    userId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Unauthorized");
     const notifications = await ctx.db
       .query("notifications")
-      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .withIndex("by_user_id_read", (q) =>
+        q.eq("userId", userId).eq("isRead", false)
+      )
       .filter((q) => q.eq(q.field("isRead"), false))
       .collect();
 
@@ -206,13 +142,31 @@ export const markAllNotificationsAsRead = mutation({
   },
 });
 
-// Delete notification
 export const deleteNotification = mutation({
   args: {
     notificationId: v.id("notifications"),
   },
   handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Unauthorized");
     await ctx.db.delete(args.notificationId);
+  },
+});
+
+export const deleteAllNotification = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Unauthorized");
+
+    const notifications = await ctx.db
+      .query("notifications")
+      .withIndex("by_user_id", (q) => q.eq("userId", userId))
+      .collect();
+
+    await Promise.all(
+      notifications.map((notification) => ctx.db.delete(notification._id))
+    );
   },
 });
 
@@ -228,7 +182,7 @@ export const getUnreadCount = query({
 
     const unreadNotifications = await ctx.db
       .query("notifications")
-      .filter((q) => q.eq(q.field("userId"), userId))
+      .withIndex("by_user_id", (q) => q.eq("userId", userId))
       .filter((q) => q.eq(q.field("isRead"), false))
       .filter((q) => q.eq(q.field("metadata.workspaceId"), args.workspaceId))
       .collect();
@@ -269,9 +223,13 @@ export const getWorkspaceNotifications = query({
 
     let query = ctx.db
       .query("notifications")
-      .filter((q) => q.eq(q.field("userId"), userId))
-      .filter((q) => q.eq(q.field("metadata.workspaceId"), args.workspaceId));
-
+      .withIndex("by_user_id", (q) => q.eq("userId", userId))
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("metadata.workspaceId"), args.workspaceId),
+          q.eq(q.field("metadata.workspaceId"), undefined)
+        )
+      );
     if (args.type) {
       query = query.filter((q) => q.eq(q.field("type"), args.type));
     }

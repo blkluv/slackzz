@@ -3,7 +3,7 @@ import { api } from "../../../../convex/_generated/api";
 import { useCallback, useMemo, useState } from "react";
 import { Id } from "../../../../convex/_generated/dataModel";
 
-type RequestType = { name: string };
+type RequestType = { name: string; imageUrl?: string };
 type ResponseType = Id<"workspaces"> | null;
 
 type Options = {

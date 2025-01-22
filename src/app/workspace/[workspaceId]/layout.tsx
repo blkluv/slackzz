@@ -38,8 +38,9 @@ function WorkspaceIdLayout({ children }: WorkspaceIdLayoutProps) {
           >
             <ResizablePanel
               defaultSize={20}
-              minSize={11}
+              minSize={0}
               className="bg-[#5E2C5F]"
+              maxSize={18}
             >
               <WorkspaceSideBar />
             </ResizablePanel>
@@ -50,7 +51,7 @@ function WorkspaceIdLayout({ children }: WorkspaceIdLayoutProps) {
             {showPanel && (
               <>
                 <ResizableHandle withHandle />
-                <ResizablePanel minSize={20} defaultSize={29}>
+                <ResizablePanel minSize={20} defaultSize={30} maxSize={40}>
                   {parentMessageId ? (
                     <Thread
                       isThreadPage={window.location.pathname.includes(

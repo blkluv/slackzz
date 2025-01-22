@@ -11,6 +11,7 @@ import { Doc } from "../../../../convex/_generated/dataModel";
 import { ChevronDown } from "lucide-react";
 import PreferencesModal from "./preferences-modal";
 import InviteModal from "./invite-modal";
+import Image from "next/image";
 
 interface WorkspaceHeader {
   workspace: Doc<"workspaces">;
@@ -31,8 +32,21 @@ const WorkspaceHeader = ({ workspace, isAdmin }: WorkspaceHeader) => {
       <PreferencesModal
         open={preferencesOpen}
         setOpen={setPreferencesOpen}
-        initialValue={workspace.name.substring(0, 30)}
+        initialValue={{
+          workspaceName: workspace.name.substring(0, 30),
+          imageUrl: workspace.imageUrl,
+        }}
       />
+      {workspace.imageUrl && (
+        <article className="relative w-full h-32">
+          <Image
+            src={workspace.imageUrl}
+            className="object-cover  "
+            fill
+            alt={workspace.name}
+          />
+        </article>
+      )}
       <div className="flex items-center justify-between px-4 h-[49px] gap-0.5">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -48,9 +62,19 @@ const WorkspaceHeader = ({ workspace, isAdmin }: WorkspaceHeader) => {
           <DropdownMenuContent side="bottom" align="start" className="w-64">
             <DropdownMenuItem className="cursor-pointer capitalize">
               <div className="size-9 relative overflow-hidden bg-[#616061] text-white font-semibold flex text-xl rounded-md items-center justify-center mr-2">
-                {workspace.name.charAt(0).toUpperCase()}
+                {workspace.imageUrl ? (
+                  <Image
+                    src={workspace.imageUrl}
+                    alt={`${workspace.name} workspace`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                ) : (
+                  workspace.name.charAt(0).toUpperCase()
+                )}
               </div>
-              <div className="flex flex-col items-start ">
+              <div className="flex flex-col items-start">
                 <p className="font-bold truncate">
                   {workspace.name.substring(0, 25)}
                 </p>
@@ -80,24 +104,12 @@ const WorkspaceHeader = ({ workspace, isAdmin }: WorkspaceHeader) => {
                     setPreferencesOpen(true);
                   }}
                 >
-                  Preferences
+                  Edit workspace{" "}
                 </DropdownMenuItem>
               </>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-        {/* <div className="flex items-center gap-0.5">
-          <Hint label="Filter conversations" side="bottom">
-            <Button size={"iconSm"} variant={"transparent"}>
-              <Filter className="size-4" />
-            </Button>
-          </Hint>
-          <Hint label="New message" side="bottom">
-            <Button size={"iconSm"} variant={"transparent"}>
-              <SquarePen className="size-4" />
-            </Button>
-          </Hint>
-        </div> */}
       </div>
     </>
   );

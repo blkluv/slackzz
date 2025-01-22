@@ -4,8 +4,9 @@ import {
   generateUploadButton,
   generateUploadDropzone,
 } from "@uploadthing/react";
-import type { ImagesRouter } from "@/app/api/uploadthing/core";
 import { ThreadSummary } from "../../convex/thread";
+import { OurFileRouter } from "@/app/api/uploadthing/_core";
+import imageCompression from "browser-image-compression";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -18,8 +19,8 @@ export const formatDate = (date: Date) => {
   }).format(date);
 };
 
-export const UploadButton = generateUploadButton<ImagesRouter>();
-export const UploadDropzone = generateUploadDropzone<ImagesRouter>();
+export const UploadButton = generateUploadButton<OurFileRouter>();
+export const UploadDropzone = generateUploadDropzone<OurFileRouter>();
 
 export const filterThreads = (threads: ThreadSummary[], searchTerm: string) => {
   if (searchTerm.length == 0) return threads;
@@ -63,5 +64,23 @@ export const getPristineUrl = (url: string): string => {
     return pristineUrl;
   } catch {
     return url;
+  }
+};
+
+export const handleImageUpload = async (file: File[]): Promise<File[]> => {
+  try {
+    const options = {
+      maxSizeMB: 0.1,
+      maxWidthOrHeight: 500,
+      quality: 0.3,
+      useWebWorker: true,
+    };
+
+    const compressedFile = await imageCompression(file[0], options);
+
+    return [compressedFile];
+  } catch (error) {
+    console.error("Error compressing image:", error);
+    return file;
   }
 };

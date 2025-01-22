@@ -9,7 +9,6 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { usePanel } from "@/hooks/use-panel";
 
-// Type Definitions
 interface UserStatus {
   _id: string;
   _creationTime: number;
@@ -134,22 +133,22 @@ const MemberListPage: React.FC = () => {
     if (!members) return { admins: [], onlineMembers: [], offlineMembers: [] };
 
     const filtered = members.filter((member) =>
-      member.user.name.toLowerCase().includes(searchQuery.toLowerCase())
+      member.user?.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return {
       admins: filtered.filter(
         (member) =>
           member.role === "admin" &&
-          member.user.userStatus?.currentStatus === "online"
+          member.user?.userStatus?.currentStatus === "online"
       ),
       onlineMembers: filtered.filter(
         (member) =>
           member.role === "member" &&
-          member.user.userStatus?.currentStatus === "online"
+          member.user?.userStatus?.currentStatus === "online"
       ),
       offlineMembers: filtered.filter(
-        (member) => member.user.userStatus?.currentStatus === "offline"
+        (member) => member.user?.userStatus?.currentStatus === "offline"
       ),
     };
   }, [members, searchQuery]);
@@ -165,13 +164,15 @@ const MemberListPage: React.FC = () => {
   return (
     <div className="flex h-screen flex-col bg-background">
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-16 items-center gap-4 px-6">
+        <div className="flex flex-col gap-3 p-4 sm:p-6 md:flex-row md:items-center md:gap-4">
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5 text-muted-foreground" />
             <h1 className="text-lg font-semibold">Members</h1>
           </div>
-          <Separator orientation="vertical" className="h-6" />
-          <div className="relative flex-1 max-w-md">
+          <div className="hidden md:flex md:items-center">
+            <Separator orientation="vertical" className="h-6" />
+          </div>
+          <div className="relative flex-1 w-full max-w-xl">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search members"

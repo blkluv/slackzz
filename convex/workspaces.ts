@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
+import { Doc } from "./_generated/dataModel";
 
 const generateCode = () => {
   const code = Array.from(
@@ -16,7 +17,7 @@ export const get = query({
     const userId = await auth.getUserId(ctx);
     if (!userId) return [];
 
-    const workspaces = [];
+    const workspaces: Doc<"workspaces">[] = [];
 
     const members = await ctx.db
       .query("members")
@@ -105,7 +106,7 @@ export const update = mutation({
   args: {
     id: v.id("workspaces"),
     name: v.string(),
-    imageUrl: v.string(),
+    imageUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
@@ -121,9 +122,7 @@ export const update = mutation({
     if (!member || member.role !== "admin") {
       throw new Error("Unauthorized");
     }
-    if (args.imageUrl) {
-      //handle delete imageUrl in uploadingthing
-    }
+
     await ctx.db.patch(args.id, {
       name: args.name,
       imageUrl: args.imageUrl,
@@ -151,29 +150,39 @@ export const remove = mutation({
       throw new Error("Unauthorized");
     }
 
-    const [members, channels, conversations, messages, reactions] =
-      await Promise.all([
-        ctx.db
-          .query("members")
-          .withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.id))
-          .collect(),
-        ctx.db
-          .query("channels")
-          .withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.id))
-          .collect(),
-        ctx.db
-          .query("conversations")
-          .withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.id))
-          .collect(),
-        ctx.db
-          .query("messages")
-          .withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.id))
-          .collect(),
-        ctx.db
-          .query("reactions")
-          .withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.id))
-          .collect(),
-      ]);
+    const [
+      members,
+      channels,
+      conversations,
+      messages,
+      reactions,
+      notifications,
+    ] = await Promise.all([
+      ctx.db
+        .query("members")
+        .withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.id))
+        .collect(),
+      ctx.db
+        .query("channels")
+        .withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.id))
+        .collect(),
+      ctx.db
+        .query("conversations")
+        .withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.id))
+        .collect(),
+      ctx.db
+        .query("messages")
+        .withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.id))
+        .collect(),
+      ctx.db
+        .query("reactions")
+        .withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.id))
+        .collect(),
+      ctx.db
+        .query("notifications")
+        .filter((q) => q.eq(q.field("metadata.workspaceId"), args.id))
+        .collect(),
+    ]);
 
     for (const member of members) {
       await ctx.db.delete(member._id);
@@ -189,6 +198,9 @@ export const remove = mutation({
     }
     for (const reaction of reactions) {
       await ctx.db.delete(reaction._id);
+    }
+    for (const notification of notifications) {
+      await ctx.db.delete(notification._id);
     }
 
     await ctx.db.delete(args.id);

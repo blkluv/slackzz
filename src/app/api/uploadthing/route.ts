@@ -1,7 +1,11 @@
 import { createRouteHandler } from "uploadthing/next";
 
-import { imagesRouter } from "./core";
+import { ourFileRouter } from "./_core";
 
+// Export routes for Next App Router
 export const { GET, POST } = createRouteHandler({
-  router: imagesRouter,
+  router: ourFileRouter,
+
+  // Apply an (optional) custom config:
+  // config: { ... },
 });

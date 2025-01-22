@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,6 +12,7 @@ import { useGetWorkspaces } from "@/features/workspaces/api/use-get-workspaces";
 import { useCreateWorkspaceModal } from "@/features/workspaces/store/use-get-workspace-modal";
 import { useWorkSpaceId } from "@/hooks/use-workspace-id";
 import { Loader, Plus } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React from "react";
 
@@ -27,47 +30,100 @@ const WorkspaceSwitcher = () => {
     (workspace) => workspace?._id !== workspaceId
   );
 
+  const WorkspaceImage = ({
+    imageUrl,
+    name,
+    size = "h-9 w-9",
+  }: {
+    imageUrl?: string;
+    name: string;
+    size?: string;
+  }) => {
+    if (imageUrl) {
+      return (
+        <div
+          className={`relative ${size} rounded-md overflow-hidden  hover:opacity-90 transition-opacity`}
+        >
+          <Image
+            src={imageUrl}
+            alt={`${name}'s workspace`}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className={`${size} rounded-md bg-gradient-to-br from-primary/90 to-primary flex items-center justify-center text-primary-foreground font-semibold`}
+      >
+        {name.charAt(0).toUpperCase()}
+      </div>
+    );
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button className="size-9 overflow-hidden bg-[#ABABAD] hover:bg-[#ABABAD]/80 text-slate-800 font-semibold text-xl">
+        <Button className="p-0 size-9 rounded-[16px] overflow-hidden hover:rounded-[12px] transition-all duration-200 relative  hover:shadow-md">
           {workspaceLoading ? (
-            <Loader className="size-5 animate-spin shrink-0" />
+            <Loader className="h-5 w-5 animate-spin" />
           ) : (
-            workspace?.name.charAt(0).toLocaleUpperCase()
+            <WorkspaceImage
+              imageUrl={workspace?.imageUrl}
+              name={workspace?.name || ""}
+              size="h-full w-full"
+            />
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="bottom" align="start" className="w-64">
+      <DropdownMenuContent
+        side="bottom"
+        align="start"
+        className="w-64 p-2 rounded-xl border border-border/50 shadow-lg"
+      >
         <DropdownMenuItem
           onClick={() => router.push(`/workspace/${workspaceId}`)}
-          className="cursor-pointer truncate  flex-col justify-start items-start capitalize"
+          className="cursor-pointer p-2 flex gap-3 items-center rounded-md "
         >
-          {workspace?.name}
-          <span className="text-xs text-muted-foreground">
-            Active workspace
-          </span>
+          <WorkspaceImage
+            imageUrl={workspace?.imageUrl}
+            name={workspace?.name || ""}
+          />
+          <div className="flex flex-col">
+            <span className="font-medium capitalize">{workspace?.name}</span>
+            <span className="text-xs text-muted-foreground">
+              Active workspace
+            </span>
+          </div>
         </DropdownMenuItem>
+
         {filteredWorkspaces?.map((workspace) => (
           <DropdownMenuItem
             key={workspace?._id}
-            className="cursor-pointer capitalize overflow-hidden flex"
+            className="cursor-pointer p-2 mt-1 flex gap-3 items-center rounded-md "
             onClick={() => router.push(`/workspace/${workspace._id}`)}
           >
-            <div className="shrink-0 size-9 relative overflow-hidden bg-[#616061]  text-white font-semibold text-lg rounded-md flex items-center justify-center mr-2">
-              {workspace.name.charAt(0).toUpperCase()}
-            </div>
-            <p className="truncate">{workspace.name}</p>
+            <WorkspaceImage
+              imageUrl={workspace?.imageUrl}
+              name={workspace.name}
+            />
+            <span className="font-medium capitalize truncate">
+              {workspace.name}
+            </span>
           </DropdownMenuItem>
         ))}
+
         <DropdownMenuItem
-          className="cursor-pointer "
+          className="cursor-pointer p-2 mt-1 flex gap-3 items-center rounded-md "
           onClick={() => setOpen(true)}
         >
-          <div className="size-9 relative overflow-hidden bg-[#F2F2F2]  text-slate-800 font-semibold text-lg rounded-md flex items-center justify-center mr-2">
-            <Plus />
+          <div className="h-9 w-9  rounded-md flex items-center justify-center   transition-colors">
+            <Plus className="h-5 w-5" />
           </div>
-          Create a new workspace
+          <span className="font-medium">Create a new workspace</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
