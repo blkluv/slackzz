@@ -149,7 +149,11 @@ function UserButton() {
                     </div>
                   </div>
 
-                  <CustomStatusModal currentUserStatus={currentUserStatus} />
+                  <CustomStatusModal
+                    userId={data?._id}
+                    setCurrentUserStatus={setCurrentUserStatus}
+                    currentUserStatus={currentUserStatus}
+                  />
 
                   <div className="flex flex-col space-y-1">
                     <button
@@ -164,6 +168,16 @@ function UserButton() {
                             onSuccess: () => {
                               toast.success(
                                 "Switching invisible mode successful"
+                              );
+                              getUserStatus(
+                                {
+                                  userId: data?._id,
+                                },
+                                {
+                                  onSuccess: (res) => {
+                                    setCurrentUserStatus(res);
+                                  },
+                                }
                               );
                             },
                           }

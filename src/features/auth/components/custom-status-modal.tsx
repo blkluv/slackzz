@@ -39,7 +39,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useUpdateUserStatus } from "@/features/status/api/use-update-user-status";
 import { toast } from "sonner";
-import { Doc } from "../../../../convex/_generated/dataModel";
+import { Doc, Id } from "../../../../convex/_generated/dataModel";
+import { useGetUserStatus } from "@/features/status/api/use-get-user-status";
 
 const formSchema = z.object({
   emoji: z.string().optional(),
@@ -63,9 +64,15 @@ const getExpirationOptions = () => [
 
 const CustomStatusModal = ({
   currentUserStatus,
+  userId,
+  setCurrentUserStatus,
 }: {
+  userId: Id<"users">;
   currentUserStatus: Doc<"usersStatus">;
+  setCurrentUserStatus: React.Dispatch<any>;
 }) => {
+  const { mutate: getUserStatus } = useGetUserStatus();
+
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [customDate, setCustomDate] = useState<Date | undefined>();
@@ -112,6 +119,16 @@ const CustomStatusModal = ({
       {
         onSuccess: () => {
           toast.success("Update user status is successful");
+          getUserStatus(
+            {
+              userId: userId,
+            },
+            {
+              onSuccess: (res) => {
+                setCurrentUserStatus(res);
+              },
+            }
+          );
         },
         onError: () => {
           toast.error("Failed to update user status");
