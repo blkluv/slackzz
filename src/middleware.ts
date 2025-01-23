@@ -13,9 +13,15 @@ const isPublicPage = createRouteMatcher([
 const isUnregisteredUserOnlyPlace = createRouteMatcher(["/auth"]);
 
 export default convexAuthNextjsMiddleware((res) => {
+  console.log("middleware hit ");
+
   if (!isPublicPage(res) && !isAuthenticatedNextjs()) {
+    console.log("unauthorized");
+
     return nextjsMiddlewareRedirect(res, "/auth");
   } else if (isUnregisteredUserOnlyPlace(res) && isAuthenticatedNextjs()) {
+    console.log("authorized, redirecting...");
+
     return nextjsMiddlewareRedirect(res, "/");
   }
 });
