@@ -118,41 +118,17 @@ const Editor = ({
     const editorContainer = container.appendChild(
       container.ownerDocument.createElement("div")
     );
+    const showProOption = isPro == true ? true : false;
 
-    const options: QuillOptions = {
-      theme: "snow",
-      placeholder: placeHolderRef.current,
-      modules: {
-        magicUrl: true,
-        mention: {
-          allowedChars: /^[A-Za-z\sÅÄÖåäö]*$/,
-          mentionDenotationChars: isDMs ? ["#"] : ["@", "#"],
-          source: function (
-            searchTerm: string,
-            renderList: (values: SuggestionValue[], searchTerm: string) => void,
-            mentionChar: string
-          ) {
-            const values =
-              mentionChar === "#"
-                ? channelsRef.current
-                : workspaceMembersRef.current;
-
-            if (!values) return;
-
-            if (searchTerm.length === 0) {
-              renderList(values, searchTerm);
-            } else {
-              const matches = values.filter((value) =>
-                value.value?.toLowerCase().includes(searchTerm.toLowerCase())
-              );
-              renderList(matches, searchTerm);
-            }
-          },
-        },
-        toolbar: [
+    const toolbar = !showProOption
+      ? [
           ["bold", "italic", "strike"],
           [{ list: "ordered" }, { list: "bullet" }],
-          isPro && [
+        ]
+      : [
+          ["bold", "italic", "strike"],
+          [{ list: "ordered" }, { list: "bullet" }],
+          [
             {
               color: [
                 false,
@@ -234,7 +210,39 @@ const Editor = ({
               ],
             },
           ],
-        ],
+        ];
+
+    const options: QuillOptions = {
+      theme: "snow",
+      placeholder: placeHolderRef.current,
+      modules: {
+        magicUrl: true,
+        mention: {
+          allowedChars: /^[A-Za-z\sÅÄÖåäö]*$/,
+          mentionDenotationChars: isDMs ? ["#"] : ["@", "#"],
+          source: function (
+            searchTerm: string,
+            renderList: (values: SuggestionValue[], searchTerm: string) => void,
+            mentionChar: string
+          ) {
+            const values =
+              mentionChar === "#"
+                ? channelsRef.current
+                : workspaceMembersRef.current;
+
+            if (!values) return;
+
+            if (searchTerm.length === 0) {
+              renderList(values, searchTerm);
+            } else {
+              const matches = values.filter((value) =>
+                value.value?.toLowerCase().includes(searchTerm.toLowerCase())
+              );
+              renderList(matches, searchTerm);
+            }
+          },
+        },
+        toolbar: toolbar,
         keyboard: {
           bindings: {
             enter: {
@@ -287,8 +295,8 @@ const Editor = ({
     innerRef,
     channelsRef,
     workspaceMembersRef,
-    isPro,
     files,
+    isPro,
     isUploadingFiles,
     isDMs,
   ]);
