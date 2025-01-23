@@ -53,7 +53,9 @@ function UserButton() {
   }
 
   if (!data || !currentUserStatus) {
+    console.log("HEY YOU LOOK OUT");
     router.push("/auth");
+
     return null;
   }
   const { image, name, email } = data;
