@@ -5,19 +5,23 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./ui/tooltip";
+import { cn } from "@/lib/utils";
 
 interface HintProps {
   label: string;
   children: ReactNode;
   side?: "top" | "right" | "bottom" | "left";
   align?: "start" | "end" | "center";
+  className?: string;
 }
 
-const Hint = ({ children, label, align, side }: HintProps) => {
+const Hint = ({ children, label, align, side, className }: HintProps) => {
   return (
     <TooltipProvider>
       <Tooltip delayDuration={50}>
-        <TooltipTrigger asChild>{children}</TooltipTrigger>
+        <TooltipTrigger asChild className={cn("cursor-pointer", className)}>
+          {children}
+        </TooltipTrigger>
         <TooltipContent
           side={side}
           align={align}

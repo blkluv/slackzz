@@ -49,7 +49,7 @@ interface MessageProps {
     }
   >;
   body: Doc<"messages">["body"];
-  image: string | null | undefined;
+  image?: string[];
   createdAt: Doc<"messages">["_creationTime"];
   updatedAt: Doc<"messages">["updatedAt"];
   isCompact?: boolean;
@@ -195,9 +195,31 @@ export default function Message({
     removeMessage(
       { id },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           toast.success("Message deleted.");
           if (parentMessageId === id) onCloseMessage();
+          if (data && data?.length > 0) {
+            data?.forEach(async (img) => {
+              const fileKey = img?.split("/").pop();
+              if (!fileKey) {
+                throw new Error("Could not determine file key");
+              }
+
+              const response = await fetch("/api/uploadthing/file", {
+                method: "DELETE",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ fileKey }),
+              });
+
+              if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || "Failed to delete file");
+              }
+              console.log("file deleted");
+            });
+          }
         },
         onError: () => toast.error("Message deletion failed."),
       }
@@ -251,7 +273,13 @@ export default function Message({
             ) : (
               <div className="flex flex-col w-full">
                 <Renderer links={links} value={body} messageId={id} />
-                <ThumbNail url={image} />
+                {image && image.length > 0 ? (
+                  <>
+                    {image.map((file, index) => {
+                      return <ThumbNail key={file + index} url={file} />;
+                    })}
+                  </>
+                ) : null}
                 {updatedAt && (
                   <span className="text-xs text-muted-foreground">
                     (edited)
@@ -346,7 +374,13 @@ export default function Message({
               </div>
 
               <Renderer links={links} value={body} messageId={id} />
-              <ThumbNail url={image} />
+              {image && image.length > 0 ? (
+                <>
+                  {image.map((file, index) => {
+                    return <ThumbNail key={file + index} url={file} />;
+                  })}
+                </>
+              ) : null}
 
               {updatedAt && (
                 <span className="text-xs text-muted-foreground">(edited)</span>

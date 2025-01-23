@@ -1,5 +1,4 @@
 import { useCreateMessage } from "@/features/messages/api/use-create-message";
-import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { useWorkSpaceId } from "@/hooks/use-workspace-id";
 import dynamic from "next/dynamic";
@@ -26,7 +25,7 @@ type CreateMessageValue = {
   channelId: Id<"channels">;
   workspaceId: Id<"workspaces">;
   body: string;
-  image?: Id<"_storage">;
+  image?: string[];
 };
 
 // Memoize the URL processing function
@@ -68,10 +67,6 @@ const ChatInput = ({ placeholder }: ChatInputProps) => {
   const [localPending, setLocalPending] = useState(false);
   const editorRef = useRef<Quill | null>(null);
 
-  // Prefetch the upload URL
-  const { mutate: generateUploadUrl, data: cachedUploadUrl } =
-    useGenerateUploadUrl();
-
   // Use optimistic updates for message creation
   const { mutate: createMessage, data: messageId } = useCreateMessage();
   const workspaceId = useWorkSpaceId();
@@ -88,9 +83,8 @@ const ChatInput = ({ placeholder }: ChatInputProps) => {
     [channelId, workspaceId]
   );
 
-  // Optimized submit handler with error boundary
   const handleSubmit = useCallback(
-    async ({ body, image }: { body: string; image: File | null }) => {
+    async ({ body, files }: { body: string; files?: string[] }) => {
       if (!editorRef.current) return;
 
       setLocalPending(true);
@@ -107,29 +101,9 @@ const ChatInput = ({ placeholder }: ChatInputProps) => {
           const messageValue: CreateMessageValue = {
             ...baseCreateMessageValue,
             body: JSON.stringify({ ...jsonBody, ops: processedOps }),
+            image: files,
           };
 
-          // Handle image upload in parallel if needed
-          if (image) {
-            const uploadUrl =
-              cachedUploadUrl ||
-              (await generateUploadUrl(null, { throwError: true }));
-            if (!uploadUrl) throw new Error("Upload URL not found");
-
-            const uploadPromise = fetch(uploadUrl, {
-              method: "POST",
-              headers: { "Content-Type": image.type },
-              body: image,
-            });
-
-            const result = await uploadPromise;
-            if (!result.ok) throw new Error("Failed to upload image");
-
-            const { storageId } = await result.json();
-            messageValue.image = storageId;
-          }
-
-          // Create message and handle mentions in parallel
           const [createdMessageId] = await Promise.all([
             createMessage(messageValue, { throwError: true }),
             userMentionSet.size > 0 && messageId
@@ -167,10 +141,8 @@ const ChatInput = ({ placeholder }: ChatInputProps) => {
       messageId,
       currentMember?._id,
       baseCreateMessageValue,
-      cachedUploadUrl,
       createMessage,
       createNotification,
-      generateUploadUrl,
     ]
   );
 

@@ -15,11 +15,19 @@ import MagicUrl from "quill-magic-url";
 
 import { Button } from "./ui/button";
 import { PiTextAa } from "react-icons/pi";
-import { ImageIcon, Smile, XIcon } from "lucide-react";
+import {
+  Loader2,
+  Smile,
+  XIcon,
+  FileText,
+  Film,
+  Music,
+  File as FileIcon,
+} from "lucide-react";
 import { MdSend } from "react-icons/md";
 import Hint from "./hint";
 import EmojiPopover from "./emoji-popover";
-import { cn } from "@/lib/utils";
+import { cn, UploadButton } from "@/lib/utils";
 import { useGetSuggestions } from "@/features/suggestion/api/use-get-suggestion";
 import { useWorkSpaceId } from "@/hooks/use-workspace-id";
 import { Id } from "../../convex/_generated/dataModel";
@@ -27,9 +35,16 @@ import { UseGetIsProUser } from "@/features/subscription/api/use-get-is-pro-user
 
 Quill.register("modules/magicUrl", MagicUrl);
 
+// Enhanced type definitions
+type FileInfo = {
+  url: string;
+  type: string;
+  name: string;
+};
+
 type EditorValue = {
-  image: File | null;
   body: string;
+  files?: string[];
 };
 
 type SuggestionValue = {
@@ -38,7 +53,7 @@ type SuggestionValue = {
 };
 
 interface EditorProps {
-  onSubmit: ({ image, body }: EditorValue) => void;
+  onSubmit: ({ files, body }: EditorValue) => void;
   onCancel?: () => void;
   placeHolder?: string;
   defaultValue?: Delta | Op[];
@@ -57,8 +72,10 @@ const Editor = ({
   onCancel,
 }: EditorProps) => {
   const [text, setText] = useState("");
-  const [image, setImage] = useState<File | null>(null);
+  const [files, setFiles] = useState<FileInfo[]>([]);
   const [isToolbarVisible, setIsToolbarVisible] = useState(true);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [isUploadingFiles, setIsUploadingFiles] = useState<boolean>(false);
 
   const pathName = usePathname();
   const isDMs = pathName.includes("member");
@@ -75,7 +92,6 @@ const Editor = ({
   const quillRef = useRef<Quill | null>(null);
   const defaultValueRef = useRef(defaultValue);
   const disabledRef = useRef(disabled);
-  const imageElementRef = useRef<HTMLInputElement>(null);
   const channelsRef = useRef<null | SuggestionValue[]>(null);
   const workspaceMembersRef = useRef<null | SuggestionValue[]>(null);
 
@@ -135,12 +151,11 @@ const Editor = ({
         },
         toolbar: [
           ["bold", "italic", "strike"],
-
           [{ list: "ordered" }, { list: "bullet" }],
           isPro && [
             {
               color: [
-                false, // this represents the 'remove color' option
+                false,
                 "#000000",
                 "#e60000",
                 "#ff9900",
@@ -180,7 +195,7 @@ const Editor = ({
             },
             {
               background: [
-                false, // remove background option
+                false,
                 "#000000",
                 "#e60000",
                 "#ff9900",
@@ -226,15 +241,20 @@ const Editor = ({
               key: "Enter",
               handler: () => {
                 const text = quill.getText();
-                const addedImage = imageElementRef.current?.files?.[0] || null;
                 const isEmpty =
-                  !addedImage &&
+                  files?.length == 0 &&
                   text.replace(/<(.|\n)*?>/g, "").trim().length === 0;
 
-                if (isEmpty) return;
-
+                if (isEmpty || isUploadingFiles) return;
                 const body = JSON.stringify(quill.getContents());
-                submitRef.current?.({ body, image: addedImage });
+                const fileUrl = files.map((file) => file.url);
+
+                submitRef.current?.({ body, files: fileUrl });
+                console.log({
+                  body: JSON.stringify(quillRef?.current?.getContents()),
+                  files: fileUrl,
+                });
+                setFiles([]);
               },
             },
           },
@@ -263,7 +283,15 @@ const Editor = ({
       if (quillRef.current) quillRef.current = null;
       if (innerRef) innerRef.current = null;
     };
-  }, [innerRef, channelsRef, workspaceMembersRef, isPro]);
+  }, [
+    innerRef,
+    channelsRef,
+    workspaceMembersRef,
+    isPro,
+    files,
+    isUploadingFiles,
+    isDMs,
+  ]);
 
   const toggleToolbar = () => {
     setIsToolbarVisible((cur) => !cur);
@@ -278,32 +306,89 @@ const Editor = ({
     quill?.insertText(quill?.getSelection()?.index || 0, emojiValue);
   };
 
-  const handleSubmit = () => {
-    onSubmit({
-      body: JSON.stringify(quillRef?.current?.getContents()),
-      image,
-    });
-  };
+  const handleFileRemove = async (url: string) => {
+    try {
+      setIsDeleting(true);
+      const fileKey = url?.split("/").pop();
+      if (!fileKey) {
+        throw new Error("Could not determine file key");
+      }
 
-  const handleImageRemove = () => {
-    setImage(null);
-    if (imageElementRef.current) {
-      imageElementRef.current.value = "";
+      const response = await fetch("/api/uploadthing/file", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ fileKey }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to delete file");
+      }
+
+      setFiles((prev) => prev.filter((file) => file.url !== url));
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to delete file. Please try again."
+      );
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  const isEmpty = !image && text.replace(/<(.|\n)*?>/g, "").trim().length === 0;
+  const handleSubmit = () => {
+    if (isUploadingFiles) {
+      return;
+    }
+    const fileUrl = files.map((file) => file.url);
+
+    onSubmit({
+      body: JSON.stringify(quillRef?.current?.getContents()),
+      files: fileUrl,
+    });
+    console.log({
+      body: JSON.stringify(quillRef?.current?.getContents()),
+      files: fileUrl,
+    });
+    setFiles([]);
+  };
+
+  const renderFilePreview = (file: FileInfo) => {
+    const mainType = file.type.split("/")[0];
+    const specificType = file.type;
+
+    switch (mainType) {
+      case "image":
+        return (
+          <Image
+            src={file.url}
+            alt={file.name}
+            sizes="62"
+            fill
+            className="rounded-xl overflow-hidden border object-cover"
+          />
+        );
+      case "video":
+        return <Film className="w-8 h-8 text-gray-400" />;
+      case "audio":
+        return <Music className="w-8 h-8 text-gray-400" />;
+      default:
+        if (specificType.includes("pdf")) {
+          return <FileText className="w-8 h-8 text-gray-400" />;
+        }
+        return <FileIcon className="w-8 h-8 text-gray-400" />;
+    }
+  };
+
+  const isEmpty =
+    files?.length == 0 && text.replace(/<(.|\n)*?>/g, "").trim().length === 0;
 
   return (
     <div className="flex flex-col">
-      <input
-        type="file"
-        accept="image/*"
-        ref={imageElementRef}
-        onChange={(e) => setImage(e.target.files![0])}
-        className="hidden"
-      />
-
       <div
         className={cn(
           "flex flex-col border border-slate-200 rounded-md focus-within:border-slate-300 focus-within:shadow-sm transition bg-white",
@@ -312,27 +397,35 @@ const Editor = ({
       >
         <div ref={containerRef} className="h-full ql-custom" />
 
-        {image && (
-          <div className="p-2">
-            <div className="relative size-[62px] flex items-center justify-center group/image">
-              <Hint label="Remove image">
-                <button
-                  disabled={disabled}
-                  onClick={handleImageRemove}
-                  className="hidden group-hover/image:flex rounded-full bg-black/70 hover:bg-black absolute -top-2.5 -right-2.5 text-white size-6 z-[4] border-2 border-white justify-center items-center"
+        <div className="flex">
+          {files.map((file) => (
+            <div className="p-2" key={file.url}>
+              <div className="relative size-[62px] flex items-center justify-center group/image">
+                <Hint label="Remove file">
+                  <button
+                    type="button"
+                    disabled={disabled || isDeleting}
+                    onClick={() => handleFileRemove(file.url)}
+                    className="hidden group-hover/image:flex rounded-full bg-black/70 hover:bg-black absolute -top-2.5 -right-2.5 text-white size-6 z-[4] border-2 border-white justify-center items-center"
+                  >
+                    <XIcon className="size-3.5" />
+                  </button>
+                </Hint>
+                {renderFilePreview(file)}
+                <div
+                  className={cn(
+                    "absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center transition-opacity",
+                    isDeleting ? "opacity-100" : "opacity-0"
+                  )}
                 >
-                  <XIcon className="size-3.5" />
-                </button>
-              </Hint>
-              <Image
-                src={URL.createObjectURL(image)}
-                alt="Uploaded"
-                fill
-                className="rounded-xl overflow-hidden border object-cover"
-              />
+                  {isDeleting && (
+                    <Loader2 className="w-8 h-8 text-white animate-spin" />
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          ))}
+        </div>
 
         <div className="flex px-2 pb-2">
           <Hint
@@ -355,15 +448,44 @@ const Editor = ({
           </EmojiPopover>
 
           {variant === "create" && (
-            <Hint label="Image">
-              <Button
-                disabled={disabled}
-                size="iconSm"
-                variant="ghost"
-                onClick={() => imageElementRef.current?.click()}
-              >
-                <ImageIcon className="size-4" />
-              </Button>
+            <Hint
+              label={
+                isPro ? "Send files" : "Send image (get pro for more options)"
+              }
+            >
+              <div className="ml-1">
+                <UploadButton
+                  appearance={{
+                    allowedContent: "hidden",
+                    button:
+                      "w-[6rem] bg-white ring-1 ring-black rounded-md !text-black  h-7 text-xs hover:bg-gray-100",
+                  }}
+                  endpoint={isPro ? "filesUploader" : "imageUploader"}
+                  onUploadError={(error) => {
+                    console.error("Upload error:", error);
+                  }}
+                  onUploadBegin={() => {
+                    setIsUploadingFiles(true);
+                  }}
+                  onClientUploadComplete={(res) => {
+                    files.forEach((file) => {
+                      handleFileRemove(file.url);
+                    });
+
+                    res.forEach((r) => {
+                      setFiles((prev) => [
+                        ...prev,
+                        {
+                          name: r.name,
+                          type: r.type,
+                          url: r.url,
+                        },
+                      ]);
+                    });
+                    setIsUploadingFiles(false);
+                  }}
+                />
+              </div>
             </Hint>
           )}
 
@@ -395,7 +517,8 @@ const Editor = ({
                   : "bg-[#007a5a] hover:bg-[#007a5a]/80 text-white"
               )}
               size="iconSm"
-              disabled={disabled || isEmpty}
+              disabled={disabled || isEmpty || isUploadingFiles}
+              type="submit"
               onClick={() => {
                 handleSubmit();
                 quillRef.current?.focus();

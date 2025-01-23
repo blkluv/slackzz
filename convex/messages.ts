@@ -93,7 +93,7 @@ const populateThreads = async (ctx: QueryCtx, messageId: Id<"messages">) => {
 export const create = mutation({
   args: {
     body: v.string(),
-    image: v.optional(v.id("_storage")),
+    image: v.optional(v.array(v.string())),
     workspaceId: v.id("workspaces"),
     channelId: v.optional(v.id("channels")),
     conversationId: v.optional(v.id("conversations")),
@@ -101,6 +101,7 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
+
     if (!userId) throw new Error("UnAuthorized");
     const member = await getMember(ctx, args.workspaceId, userId);
     if (!member) throw new Error("UnAuthorized");
@@ -175,10 +176,6 @@ export const get = query({
             const reactions = await populateReactions(ctx, message._id);
             const thread = await populateThreads(ctx, message._id);
 
-            const image = message.image
-              ? await ctx.storage.getUrl(message.image)
-              : undefined;
-
             const reactionsWithCounts = reactions.map((rec) => {
               return {
                 ...rec,
@@ -211,7 +208,6 @@ export const get = query({
 
             return {
               ...message,
-              image,
               member,
               user,
               reactions: reactionsWithoutMemberIdProperty,
@@ -282,7 +278,8 @@ export const remove = mutation({
         });
       }
     }
-    return args.id;
+
+    return message.image;
   },
 });
 
@@ -342,9 +339,6 @@ export const getById = query({
 
     return {
       ...message,
-      image: message.image
-        ? await ctx.storage.getUrl(message.image)
-        : undefined,
       user,
       member: member,
       reactions: reactionsWithoutMemberIdProperty,

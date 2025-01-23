@@ -27,7 +27,6 @@ import type * as status from "../status.js";
 import type * as stripe from "../stripe.js";
 import type * as suggestion from "../suggestion.js";
 import type * as thread from "../thread.js";
-import type * as upload from "../upload.js";
 import type * as user from "../user.js";
 import type * as workspaces from "../workspaces.js";
 
@@ -52,7 +51,6 @@ declare const fullApi: ApiFromModules<{
   stripe: typeof stripe;
   suggestion: typeof suggestion;
   thread: typeof thread;
-  upload: typeof upload;
   user: typeof user;
   workspaces: typeof workspaces;
 }>;

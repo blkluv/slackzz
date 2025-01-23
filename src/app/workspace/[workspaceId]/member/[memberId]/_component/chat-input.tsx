@@ -1,110 +1,115 @@
 import { useCreateMessage } from "@/features/messages/api/use-create-message";
-import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
 import { useWorkSpaceId } from "@/hooks/use-workspace-id";
 import dynamic from "next/dynamic";
-import Quill from "quill";
-
-const Editor = dynamic(() => import("@/components/editor"), { ssr: false });
-import React, { useRef, useState } from "react";
+import React, {
+  useCallback,
+  useTransition,
+  useRef,
+  useState,
+  memo,
+} from "react";
 import { toast } from "sonner";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
+import Quill from "quill";
 
-interface ChatInputProps {
-  placeholder: string;
-  conversationId: Id<"conversations">;
-}
+// Dynamic import with optimized loading
+const Editor = dynamic(() => import("@/components/editor"), {
+  ssr: false,
+  loading: () => <div className="h-20 bg-gray-100 animate-pulse" />,
+});
 
-type CreateMessageValue = {
+// Type narrowing and performance optimizations
+type CreateMessageValue = Readonly<{
   conversationId: Id<"conversations">;
   workspaceId: Id<"workspaces">;
   body: string;
-  image?: Id<"_storage"> | undefined;
+  image?: string[];
+}>;
+
+type SubmitPayload = {
+  body: string;
+  files?: string[];
 };
 
-const ChatInput = ({ placeholder, conversationId }: ChatInputProps) => {
-  const [editorKey, setEditorKey] = useState(0);
-  const [isPending, setIsPending] = useState(false);
-
-  const editorRef = useRef<Quill | null>(null);
-  const { mutate: createMessage } = useCreateMessage();
-  const { mutate: generateUploadUrl } = useGenerateUploadUrl();
-
-  const workspaceId = useWorkSpaceId();
-
-  const handleSubmit = async ({
-    body,
-    image,
+// Memoized component to prevent unnecessary re-renders
+const ChatInput = memo(
+  ({
+    placeholder,
+    conversationId,
   }: {
-    body: string;
-    image: File | null;
+    placeholder: string;
+    conversationId: Id<"conversations">;
   }) => {
-    try {
-      editorRef.current?.enable(false);
-      setIsPending(true);
-      const jsonBody = JSON.parse(body);
+    const [isPending, startTransition] = useTransition();
+    const [editorKey, setEditorKey] = useState(0);
 
-      jsonBody.ops.forEach((op) => {
-        if (op.insert && op.insert.mention) {
-          const mention = op.insert.mention;
-          const { denotationChar, id } = mention;
+    const editorRef = useRef<Quill | null>(null);
+    const { mutate: createMessage } = useCreateMessage();
+    const workspaceId = useWorkSpaceId();
 
-          if (denotationChar == "#") {
-            op.attributes = {
-              color: "#1d1c1d",
-              link: `/workspace/${workspaceId}/channel/${id}`,
+    const handleSubmit = useCallback(
+      ({ body, files }: SubmitPayload) => {
+        startTransition(() => {
+          try {
+            editorRef.current?.enable(false);
+
+            const jsonBody = JSON.parse(body);
+            jsonBody.ops.forEach((op) => {
+              if (op.insert?.mention) {
+                const { denotationChar, id } = op.insert.mention;
+                if (denotationChar === "#") {
+                  op.attributes = {
+                    color: "#1d1c1d",
+                    link: `/workspace/${workspaceId}/channel/${id}`,
+                  };
+                }
+              }
+            });
+
+            const values: CreateMessageValue = {
+              body: JSON.stringify(jsonBody),
+              conversationId,
+              workspaceId,
+              image: files,
             };
+
+            createMessage(values, {
+              onSuccess: () => {
+                setEditorKey((prev) => prev + 1);
+              },
+              onError: (error) => {
+                toast.error("Failed to send message");
+                console.error(error);
+              },
+              throwError: true,
+            });
+          } catch (error) {
+            toast.error("Failed to process message");
+            console.error(error);
+          } finally {
+            editorRef.current?.enable(true);
+            editorRef.current?.focus();
           }
-        }
-      });
-      const values: CreateMessageValue = {
-        body: JSON.stringify(jsonBody),
-        conversationId,
-        workspaceId,
-        image: undefined,
-      };
-
-      if (image) {
-        const url = await generateUploadUrl(null, { throwError: true });
-
-        if (!url) throw new Error("Url not found");
-
-        const result = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": image.type },
-          body: image,
         });
+      },
+      [conversationId, workspaceId, createMessage]
+    );
 
-        if (!result.ok) {
-          throw new Error("Failed to upload image");
-        }
+    return (
+      <div className="px-5 w-full">
+        <Editor
+          key={editorKey}
+          variant="create"
+          placeHolder={placeholder}
+          onSubmit={handleSubmit}
+          disabled={isPending}
+          innerRef={editorRef}
+        />
+      </div>
+    );
+  }
+);
 
-        const { storageId } = await result.json();
-        values.image = storageId;
-      }
-
-      createMessage(values, { throwError: true });
-      setEditorKey((prev) => prev + 1);
-    } catch (error) {
-      toast.error("failed to send text");
-      console.log(error);
-    } finally {
-      setIsPending(false);
-      editorRef.current?.enable(true);
-      editorRef.current?.focus();
-    }
-  };
-  return (
-    <div className="px-5 w-full">
-      <Editor
-        key={editorKey}
-        variant="create"
-        placeHolder={placeholder}
-        onSubmit={handleSubmit}
-        disabled={isPending}
-        innerRef={editorRef}
-      />
-    </div>
-  );
-};
+ChatInput.displayName = "ChatInput";
 
 export default ChatInput;

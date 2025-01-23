@@ -9,7 +9,6 @@ import { useWorkSpaceId } from "@/hooks/use-workspace-id";
 import dynamic from "next/dynamic";
 import Quill from "quill";
 import { useCreateMessage } from "../api/use-create-message";
-import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { toast } from "sonner";
 import { useGetMessages } from "../api/use-get-message";
@@ -30,7 +29,7 @@ type CreateMessageValue = {
   workspaceId: Id<"workspaces">;
   parentMessageId: Id<"messages">;
   body: string;
-  image?: Id<"_storage"> | undefined;
+  image?: string[];
 };
 
 const TIME_THRESHOLD = 5;
@@ -56,7 +55,6 @@ const Thread = ({ messageId, onCloseMessage, isThreadPage }: ThreadProps) => {
   const editorRef = useRef<Quill | null>(null);
 
   const { mutate: createMessage } = useCreateMessage();
-  const { mutate: generateUploadUrl } = useGenerateUploadUrl();
 
   const { data: currentMember } = useCurrentMember({ workspaceId });
   const { data: message, isLoading: loadingMessage } = useGetMessageById({
@@ -112,7 +110,7 @@ const Thread = ({ messageId, onCloseMessage, isThreadPage }: ThreadProps) => {
     image,
   }: {
     body: string;
-    image: File | null;
+    image?: string[];
   }) => {
     try {
       editorRef.current?.enable(false);
@@ -123,27 +121,8 @@ const Thread = ({ messageId, onCloseMessage, isThreadPage }: ThreadProps) => {
         workspaceId,
         channelId,
         parentMessageId: messageId,
-        image: undefined,
+        image: image,
       };
-
-      if (image) {
-        const url = await generateUploadUrl(null, { throwError: true });
-
-        if (!url) throw new Error("Url not found");
-
-        const result = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": image.type },
-          body: image,
-        });
-
-        if (!result.ok) {
-          throw new Error("Failed to upload image");
-        }
-
-        const { storageId } = await result.json();
-        values.image = storageId;
-      }
 
       createMessage(values, { throwError: true });
       setEditorKey((prev) => prev + 1);

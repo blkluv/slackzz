@@ -6,7 +6,7 @@ import { Id } from "../../../../convex/_generated/dataModel";
 type RequestType = {
   id: Id<"messages">;
 };
-type ResponseType = Id<"messages"> | null;
+type ResponseType = string[] | null;
 
 type Options = {
   onSuccess?: (data: ResponseType) => void;
