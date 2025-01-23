@@ -71,7 +71,7 @@ function UserButton() {
   }
 
   if (!data || !currentUserStatus) {
-    console.log("HEY YOU LOOK OUT");
+    console.log("HEY YOU LOOK OUT", data, currentUserStatus);
     router.push("/auth");
 
     return null;
