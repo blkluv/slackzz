@@ -18,32 +18,45 @@ const cleanExpiredStatus = (status: Doc<"usersStatus">) => {
   return status;
 };
 
-export const getUserStatus = mutation({
+export const getUserStatus = query({
   args: { userId: v.optional(v.id("users")) },
   handler: async (ctx, args) => {
     if (args.userId == undefined || !args.userId) {
       return undefined;
     }
-    let status = await ctx.db
+    const status = await ctx.db
       .query("usersStatus")
       .withIndex("by_user_id", (q) => q.eq("userId", args.userId!))
       .first();
 
     if (!status) {
-      const newStatusId = await ctx.db.insert("usersStatus", {
-        userId: args.userId,
-        currentStatus: "offline",
-      });
-      status = await ctx.db.get(newStatusId);
-      if (!status) {
-        return null;
-      }
+      return null;
     }
 
     status.currentStatus = status.hasForcedOffline
       ? "offline"
       : status.currentStatus;
     return cleanExpiredStatus(status);
+  },
+});
+
+export const createUserStatus = mutation({
+  args: { userId: v.optional(v.id("users")) },
+  handler: async (ctx, args) => {
+    if (args.userId == undefined || !args.userId) {
+      return undefined;
+    }
+    const status = await ctx.db
+      .query("usersStatus")
+      .withIndex("by_user_id", (q) => q.eq("userId", args.userId!))
+      .first();
+
+    if (!status) {
+      return ctx.db.insert("usersStatus", {
+        userId: args.userId,
+        currentStatus: "offline",
+      });
+    }
   },
 });
 
