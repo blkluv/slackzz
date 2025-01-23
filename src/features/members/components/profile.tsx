@@ -1,5 +1,5 @@
-import React from "react";
-import { Id } from "../../../../convex/_generated/dataModel";
+import React, { useEffect, useState } from "react";
+import { Doc, Id } from "../../../../convex/_generated/dataModel";
 import { useGetMemberById } from "../api/use-get-member-by-id";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +37,10 @@ const Profile = ({ memberId, onClose }: ProfileProps) => {
   const router = useRouter();
   const workspaceId = useWorkSpaceId();
 
+  const [memberStatus, setMemberStatus] = useState<Doc<"usersStatus"> | null>(
+    null
+  );
+
   const [UpdateDialog, confirmUpdate] = useConfirm(
     "Update member's role",
     "Are you sure you want to change member's role in this workspace?"
@@ -57,8 +61,8 @@ const Profile = ({ memberId, onClose }: ProfileProps) => {
   const { data: member, isLoading: isLoadingMember } = useGetMemberById({
     id: memberId,
   });
-  const { data: memberStatus, isLoading: isLoadingMemberStatus } =
-    useGetUserStatus({ id: member?.userId });
+  const { isPending: isGettingMember, mutate: getMemberStatus } =
+    useGetUserStatus();
 
   const { mutate: updateMember } = useUpdateMember();
   const { mutate: removeMember } = useRemoveMember();
@@ -122,8 +126,20 @@ const Profile = ({ memberId, onClose }: ProfileProps) => {
       }
     );
   };
+  useEffect(() => {
+    getMemberStatus(
+      {
+        userId: currentMember?.userId,
+      },
+      {
+        onSuccess: (res) => {
+          setMemberStatus(res);
+        },
+      }
+    );
+  }, [getMemberStatus, currentMember?.userId]);
 
-  if (isLoadingMember || isLoadingCurrentMember || isLoadingMemberStatus) {
+  if (isLoadingMember || isLoadingCurrentMember || isGettingMember) {
     return (
       <div className="h-full flex flex-col">
         <div className="flex justify-between items-center px-4 h-[49px] border-b">

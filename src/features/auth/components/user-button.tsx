@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useCurrentUser } from "../api/use-current-user";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
@@ -25,15 +25,20 @@ import CustomStatusModal from "./custom-status-modal";
 import { useGetUserStatus } from "@/features/status/api/use-get-user-status";
 import { useUpdateForcedOffline } from "@/features/status/api/use-update-forced-offline";
 import { toast } from "sonner";
+import { Doc } from "../../../../convex/_generated/dataModel";
 
 function UserButton() {
+  const [currentUserStatus, setCurrentUserStatus] =
+    useState<Doc<"usersStatus"> | null>(null);
+
   const { data, isLoading: isLoadingCurrentUser } = useCurrentUser();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const { signOut } = useAuthActions();
+
   const { isLoading: isLoadingSubscription, isSubscribed } = useSubscription();
-  const { data: currentUserStatus, isLoading: isLoadingUserStatus } =
-    useGetUserStatus({ id: data?._id });
+  const { isPending: isGettingUserStatus, mutate: getUserStatus } =
+    useGetUserStatus();
   const { mutate, isPending } = useUpdateForcedOffline();
 
   const handleSignOut = async () => {
@@ -48,7 +53,20 @@ function UserButton() {
     }
   };
 
-  if (isLoadingSubscription || isLoadingCurrentUser || isLoadingUserStatus) {
+  useEffect(() => {
+    getUserStatus(
+      {
+        userId: data?._id,
+      },
+      {
+        onSuccess: (res) => {
+          setCurrentUserStatus(res);
+        },
+      }
+    );
+  }, [data?._id, getUserStatus]);
+
+  if (isLoadingSubscription || isLoadingCurrentUser || isGettingUserStatus) {
     return <Loader className="size-4 animate-spin text-muted-foreground" />;
   }
 

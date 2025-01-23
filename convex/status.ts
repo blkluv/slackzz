@@ -18,18 +18,28 @@ const cleanExpiredStatus = (status: Doc<"usersStatus">) => {
   return status;
 };
 
-export const getUserStatus = query({
+export const getUserStatus = mutation({
   args: { userId: v.optional(v.id("users")) },
   handler: async (ctx, args) => {
     if (args.userId == undefined || !args.userId) {
       return undefined;
     }
-    const status = await ctx.db
+    let status = await ctx.db
       .query("usersStatus")
       .withIndex("by_user_id", (q) => q.eq("userId", args.userId!))
       .first();
 
-    if (!status) return null;
+    if (!status) {
+      const newStatusId = await ctx.db.insert("usersStatus", {
+        userId: args.userId,
+        currentStatus: "online",
+      });
+      status = await ctx.db.get(newStatusId);
+      if (!status) {
+        return null;
+      }
+    }
+
     status.currentStatus = status.hasForcedOffline
       ? "offline"
       : status.currentStatus;

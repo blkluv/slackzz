@@ -30,8 +30,6 @@ export const PresenceProvider = ({
 
   useEffect(() => {
     if (!isAuthenticated && !isLoading) {
-      console.log("YOU'RE NOT ALLOWED");
-
       router.replace("/auth");
     }
   }, [isAuthenticated, router, isLoading]);

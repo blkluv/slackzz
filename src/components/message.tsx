@@ -118,14 +118,15 @@ export default function Message({
   // States
   const [isMentioned, setIsMentioned] = useState<boolean>(false);
   const [links, setLinks] = useState<string[]>([]);
+  const [userStatus, setUserStatus] = useState<Doc<"usersStatus"> | null>(null);
 
   // Queries
-  const { data: userStatus } = useGetUserStatus({ id: authorId });
   const { data: isPro, isLoading: isLoadingPro } = UseGetIsProUser({
     userId: authorId,
   });
 
   // Mutations
+  const { mutate: getUserStatus } = useGetUserStatus();
   const { mutate: updateMessage, isPending: isUpdatingMessage } =
     useUpdateMessage();
   const { mutate: removeMessage, isPending: isRemovingMessage } =
@@ -148,6 +149,19 @@ export default function Message({
     () => getAvatarOptimizedImageLink(authorImage),
     [authorImage]
   );
+
+  useEffect(() => {
+    getUserStatus(
+      {
+        userId: authorId,
+      },
+      {
+        onSuccess: (res) => {
+          setUserStatus(res);
+        },
+      }
+    );
+  }, [authorId, getUserStatus]);
 
   // Process message body
   useEffect(() => {
