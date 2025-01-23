@@ -258,10 +258,7 @@ const Editor = ({
                 const fileUrl = files.map((file) => file.url);
 
                 submitRef.current?.({ body, files: fileUrl });
-                console.log({
-                  body: JSON.stringify(quillRef?.current?.getContents()),
-                  files: fileUrl,
-                });
+
                 setFiles([]);
               },
             },
@@ -358,10 +355,7 @@ const Editor = ({
       body: JSON.stringify(quillRef?.current?.getContents()),
       files: fileUrl,
     });
-    console.log({
-      body: JSON.stringify(quillRef?.current?.getContents()),
-      files: fileUrl,
-    });
+
     setFiles([]);
   };
 
