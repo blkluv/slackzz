@@ -32,7 +32,7 @@ export const getUserStatus = mutation({
     if (!status) {
       const newStatusId = await ctx.db.insert("usersStatus", {
         userId: args.userId,
-        currentStatus: "online",
+        currentStatus: "offline",
       });
       status = await ctx.db.get(newStatusId);
       if (!status) {

@@ -129,7 +129,7 @@ const Profile = ({ memberId, onClose }: ProfileProps) => {
   useEffect(() => {
     getMemberStatus(
       {
-        userId: currentMember?.userId,
+        userId: member?.userId,
       },
       {
         onSuccess: (res) => {
@@ -137,7 +137,7 @@ const Profile = ({ memberId, onClose }: ProfileProps) => {
         },
       }
     );
-  }, [getMemberStatus, currentMember?.userId]);
+  }, [getMemberStatus, member?.userId]);
 
   if (isLoadingMember || isLoadingCurrentMember || isGettingMember) {
     return (

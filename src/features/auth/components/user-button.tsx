@@ -66,16 +66,11 @@ function UserButton() {
     );
   }, [data?._id, getUserStatus]);
 
-  if (
-    isLoadingSubscription ||
-    isLoadingCurrentUser ||
-    isGettingUserStatus ||
-    !currentUserStatus
-  ) {
+  if (isLoadingSubscription || isLoadingCurrentUser || isGettingUserStatus) {
     return <Loader className="size-4 animate-spin text-muted-foreground" />;
   }
 
-  if (!data) {
+  if (!data || !currentUserStatus) {
     router.push("/auth");
 
     return null;
