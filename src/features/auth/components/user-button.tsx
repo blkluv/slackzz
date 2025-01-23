@@ -66,12 +66,16 @@ function UserButton() {
     );
   }, [data?._id, getUserStatus]);
 
-  if (isLoadingSubscription || isLoadingCurrentUser || isGettingUserStatus) {
+  if (
+    isLoadingSubscription ||
+    isLoadingCurrentUser ||
+    isGettingUserStatus ||
+    !currentUserStatus
+  ) {
     return <Loader className="size-4 animate-spin text-muted-foreground" />;
   }
 
-  if (!data || !currentUserStatus) {
-    console.log("HEY YOU LOOK OUT", data, currentUserStatus);
+  if (!data) {
     router.push("/auth");
 
     return null;
@@ -228,6 +232,7 @@ function UserButton() {
             </Popover>
           </div>
         </TooltipTrigger>
+
         <TooltipContent
           className="text-white bg-black border-black"
           side="right"
