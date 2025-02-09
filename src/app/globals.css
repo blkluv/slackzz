@@ -129,7 +129,7 @@ body {
 }
 
 .ql-mention-list-container {
-  @apply max-h-60 overflow-auto rounded-lg bg-white shadow-lg border border-gray-200 p-2 w-64;
+  @apply max-h-60 overflow-auto rounded-lg bg-white shadow-lg border border-gray-200 p-2 w-64 z-50;
 }
 .ql-mention-list {
   @apply list-none p-0 m-0;
@@ -154,3 +154,6 @@ body {
   scrollbar-width: thin;
   scrollbar-color: #dcdcdc #f8f8f8;
 }
+/* .lk-room-container {
+  @apply !max-h-3/4;
+} */
